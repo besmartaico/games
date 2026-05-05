@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Special+Elite&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 <style>
 :root {
   --bg: #0a0e0a;
@@ -1358,6 +1359,7 @@ function render() {
 
   if (g.status === 'lobby') {
     root.innerHTML = headerHtml + renderLobby();
+    renderQrCode();
   } else if (g.status === 'finished') {
     root.innerHTML = headerHtml + renderGameOver();
   } else {
@@ -1486,6 +1488,17 @@ function renderLobby() {
     </div>
 
     <div class="panel">
+      <div class="panel-title">Recruit Operatives</div>
+      <div id="qr-wrap" style="display:flex; flex-direction:column; align-items:center; gap:10px; padding:14px 8px;">
+        <div id="qr-code" style="background:#fff; padding:10px; border-radius:6px; line-height:0;"></div>
+        <div style="font-size:11px; color:var(--text-dim); text-align:center; line-height:1.5;">
+          Other operatives can scan this code<br>to join with code <span style="color:var(--green); letter-spacing:0.2em;">${g.code}</span>
+        </div>
+        <button class="subtle" onclick="copyJoinLink()" style="font-size:11px;">COPY JOIN LINK</button>
+      </div>
+    </div>
+
+    <div class="panel">
       <div class="panel-title">Players</div>
       <div class="players">${playersList}</div>
       ${isHost ? `
@@ -1509,6 +1522,43 @@ function renderLobby() {
 
     <button class="subtle" onclick="leaveGame()" style="margin-top:16px;">EXIT TERMINAL</button>
   `;
+}
+
+function renderQrCode() {
+  const el = document.getElementById('qr-code');
+  if (!el || !state.game || !state.game.code) return;
+  if (typeof qrcode === 'undefined') {
+    el.innerHTML = '<div style="color:#000; font-size:11px; padding:8px; font-family:monospace;">QR loading...</div>';
+    setTimeout(renderQrCode, 300);
+    return;
+  }
+  try {
+    const url = location.origin + location.pathname + '?code=' + encodeURIComponent(state.game.code);
+    const qr = qrcode(0, 'M');
+    qr.addData(url);
+    qr.make();
+    el.innerHTML = qr.createSvgTag({ cellSize: 5, margin: 0, scalable: true });
+    const svg = el.querySelector('svg');
+    if (svg) {
+      svg.style.width = '180px';
+      svg.style.height = '180px';
+      svg.style.display = 'block';
+    }
+  } catch (err) {
+    el.innerHTML = '<div style="color:#000; font-size:11px; padding:8px;">QR unavailable</div>';
+  }
+}
+
+function copyJoinLink() {
+  if (!state.game || !state.game.code) return;
+  const url = location.origin + location.pathname + '?code=' + encodeURIComponent(state.game.code);
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(() => toast('Join link copied', 'success')).catch(() => {
+      prompt('Copy this link:', url);
+    });
+  } else {
+    prompt('Copy this link:', url);
+  }
 }
 
 async function addBot() {
