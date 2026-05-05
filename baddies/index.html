@@ -1,0 +1,2459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0a0e0a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>THE BADDIES // Agency Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0e0a;
+  --bg-2: #0d130d;
+  --bg-3: #11181a;
+  --panel: #0f1614;
+  --border: #1f3a2a;
+  --border-hot: #2a5a3a;
+  --text: #c8e6c8;
+  --text-dim: #6a8e6a;
+  --text-faint: #3a5a3a;
+  --green: #4afc6a;
+  --green-glow: #4afc6acc;
+  --green-deep: #2ad048;
+  --red: #ff3838;
+  --red-glow: #ff3838cc;
+  --amber: #ffb84a;
+  --amber-glow: #ffb84acc;
+  --mole: #ff3838;
+  --loyalist: #4afc6a;
+  --chief: #ffb84a;
+  --mono: 'JetBrains Mono', 'Courier New', monospace;
+  --display: 'Special Elite', 'Courier New', monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+input, textarea { user-select: text; -webkit-user-select: text; }
+
+/* CRT scan lines + flicker overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 2px,
+    rgba(74, 252, 106, 0.022) 2px,
+    rgba(74, 252, 106, 0.022) 3px
+  );
+  pointer-events: none;
+  z-index: 100;
+  mix-blend-mode: overlay;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.4) 100%);
+  pointer-events: none;
+  z-index: 99;
+}
+
+/* ============ Layout ============ */
+
+.app {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  padding-top: max(16px, env(safe-area-inset-top));
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+  width: 100%;
+  max-width: 540px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.hidden { display: none !important; }
+
+/* ============ Typography ============ */
+
+.display { font-family: var(--display); letter-spacing: 0.02em; }
+.mono { font-family: var(--mono); }
+.tiny { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; }
+.dim { color: var(--text-dim); }
+.faint { color: var(--text-faint); }
+.green { color: var(--green); }
+.red { color: var(--red); }
+.amber { color: var(--amber); }
+.center { text-align: center; }
+.bold { font-weight: 700; }
+
+h1, h2, h3 { font-family: var(--display); font-weight: 400; }
+h1 { font-size: 28px; line-height: 1.1; margin-bottom: 4px; }
+h2 { font-size: 20px; line-height: 1.2; margin-bottom: 8px; }
+h3 { font-size: 15px; line-height: 1.3; text-transform: uppercase; letter-spacing: 0.1em; }
+
+/* ============ Header ============ */
+
+.header {
+  border: 1px solid var(--border);
+  background: var(--bg-2);
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  position: relative;
+}
+
+.header::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 12px;
+  width: 8px;
+  height: 8px;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--green-glow);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.header .code {
+  color: var(--green);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  font-size: 13px;
+}
+
+.header .player {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* ============ Title block ============ */
+
+.brand {
+  text-align: center;
+  margin-bottom: 24px;
+  padding: 24px 0 8px;
+}
+
+.brand .pre {
+  font-size: 11px;
+  letter-spacing: 0.4em;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
+.brand h1 {
+  font-size: 38px;
+  letter-spacing: 0.05em;
+  color: var(--text);
+  text-shadow: 0 0 18px rgba(74, 252, 106, 0.18);
+  font-weight: 400;
+}
+
+.brand h1 span {
+  color: var(--green);
+}
+
+.brand .sub {
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.3em;
+  margin-top: 6px;
+}
+
+/* ============ Buttons ============ */
+
+button, .btn {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 14px 18px;
+  background: var(--bg-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+  overflow: hidden;
+  min-height: 48px;
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+button::before, .btn::before {
+  content: '>';
+  color: var(--green);
+  margin-right: 4px;
+  opacity: 0.6;
+}
+
+button:hover:not(:disabled), .btn:hover:not(.disabled) {
+  border-color: var(--green);
+  background: var(--bg-3);
+  color: var(--green);
+  box-shadow: 0 0 0 1px var(--green-glow), inset 0 0 12px rgba(74, 252, 106, 0.06);
+}
+
+button:active:not(:disabled), .btn:active:not(.disabled) {
+  transform: translateY(1px);
+}
+
+button:disabled, .btn.disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+button.primary {
+  background: var(--green-deep);
+  border-color: var(--green);
+  color: var(--bg);
+}
+button.primary::before { color: var(--bg); }
+button.primary:hover:not(:disabled) {
+  background: var(--green);
+  color: var(--bg);
+  box-shadow: 0 0 18px var(--green-glow);
+}
+
+button.danger {
+  border-color: var(--red);
+  color: var(--red);
+}
+button.danger::before { color: var(--red); }
+button.danger:hover:not(:disabled) {
+  background: rgba(255, 56, 56, 0.1);
+  color: var(--red);
+  box-shadow: 0 0 0 1px var(--red-glow);
+}
+
+button.subtle {
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-dim);
+  padding: 8px;
+  min-height: 36px;
+  font-size: 11px;
+}
+button.subtle::before { display: none; }
+button.subtle:hover:not(:disabled) { color: var(--green); border-color: transparent; }
+
+button.icon {
+  width: 36px;
+  min-height: 36px;
+  height: 36px;
+  padding: 0;
+  font-size: 16px;
+}
+button.icon::before { display: none; }
+
+.btn-row {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.btn-row.two {
+  grid-template-columns: 1fr 1fr;
+}
+
+/* ============ Inputs ============ */
+
+input[type="text"], textarea, select {
+  font-family: var(--mono);
+  font-size: 14px;
+  background: var(--bg-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 12px 14px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+input[type="text"]:focus, textarea:focus, select:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 1px var(--green-glow), inset 0 0 8px rgba(74, 252, 106, 0.05);
+}
+
+input[type="text"]::placeholder {
+  color: var(--text-faint);
+  letter-spacing: 0.05em;
+}
+
+label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+  margin-top: 14px;
+}
+
+label:first-child { margin-top: 0; }
+
+/* Toggle switch */
+.toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  margin-bottom: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle .lbl {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.toggle .desc {
+  font-size: 10px;
+  color: var(--text-faint);
+  letter-spacing: 0.05em;
+  margin-top: 2px;
+  text-transform: none;
+}
+
+.toggle .sw {
+  width: 38px;
+  height: 22px;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  position: relative;
+  flex-shrink: 0;
+  margin-left: 12px;
+}
+
+.toggle .sw::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: var(--text-dim);
+  transition: all 0.15s;
+}
+
+.toggle.on .sw {
+  background: rgba(74, 252, 106, 0.12);
+  border-color: var(--green);
+}
+.toggle.on .sw::after {
+  left: 18px;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green-glow);
+}
+
+/* ============ Panels ============ */
+
+.panel {
+  border: 1px solid var(--border);
+  background: var(--panel);
+  padding: 14px;
+  margin-bottom: 12px;
+  position: relative;
+}
+
+.panel.hot {
+  border-color: var(--green);
+  box-shadow: 0 0 0 1px rgba(74, 252, 106, 0.2), inset 0 0 24px rgba(74, 252, 106, 0.04);
+}
+
+.panel.danger {
+  border-color: var(--red);
+  box-shadow: 0 0 0 1px rgba(255, 56, 56, 0.15);
+}
+
+.panel-title {
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.panel-title::before {
+  content: '//';
+  color: var(--green);
+}
+
+/* Code-style block */
+.kv {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  padding: 4px 0;
+  border-bottom: 1px dashed var(--border);
+}
+.kv:last-child { border-bottom: none; }
+.kv .k { color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.1em; font-size: 10px; }
+.kv .v { color: var(--text); font-weight: 500; }
+
+/* ============ Mission track ============ */
+
+.tracks {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.track {
+  border: 1px solid var(--border);
+  background: var(--bg-2);
+  padding: 10px 12px;
+}
+
+.track-label {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.track-cells {
+  display: flex;
+  gap: 4px;
+}
+
+.cell {
+  flex: 1;
+  height: 18px;
+  border: 1px solid var(--border);
+  background: var(--bg-3);
+  position: relative;
+}
+
+.cell.filled.clean {
+  background: var(--green-deep);
+  border-color: var(--green);
+  box-shadow: inset 0 0 6px rgba(74, 252, 106, 0.6);
+}
+
+.cell.filled.compromised {
+  background: var(--red);
+  border-color: var(--red);
+  box-shadow: inset 0 0 6px rgba(255, 56, 56, 0.6);
+}
+
+.cell.power-marker::after {
+  content: '!';
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: var(--amber);
+  font-weight: 700;
+}
+
+/* ============ Player list ============ */
+
+.players {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.player-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.player-row.selectable:hover {
+  border-color: var(--green);
+  background: var(--bg-3);
+}
+
+.player-row.selected {
+  border-color: var(--green);
+  background: rgba(74, 252, 106, 0.08);
+  box-shadow: 0 0 0 1px var(--green-glow);
+}
+
+.player-row.dead {
+  opacity: 0.4;
+  text-decoration: line-through;
+}
+
+.player-row .avatar {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  background: var(--bg-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+  color: var(--text-dim);
+}
+
+.player-row.is-handler .avatar {
+  border-color: var(--amber);
+  color: var(--amber);
+  box-shadow: 0 0 4px var(--amber-glow);
+}
+
+.player-row.is-operative .avatar {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.player-row.is-self {
+  border-left: 3px solid var(--green);
+  padding-left: 9px;
+}
+
+.player-row .nm {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.player-row .badge {
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border: 1px solid;
+}
+
+.badge.handler { color: var(--amber); border-color: var(--amber); }
+.badge.operative { color: var(--green); border-color: var(--green); }
+.badge.bot { color: var(--text-faint); border-color: var(--text-faint); }
+.badge.host { color: var(--amber); border-color: var(--amber); }
+.badge.you { color: var(--green); border-color: var(--green); background: rgba(74, 252, 106, 0.1); }
+.badge.role-mole { color: var(--mole); border-color: var(--mole); background: rgba(255, 56, 56, 0.08); }
+.badge.role-loyalist { color: var(--loyalist); border-color: var(--loyalist); background: rgba(74, 252, 106, 0.08); }
+.badge.role-chief { color: var(--chief); border-color: var(--chief); background: rgba(255, 184, 74, 0.08); }
+.badge.vote-approve { color: var(--green); border-color: var(--green); }
+.badge.vote-reject { color: var(--red); border-color: var(--red); }
+.badge.vote-pending { color: var(--text-dim); border-color: var(--text-dim); }
+
+/* ============ Cards (mission cards) ============ */
+
+.cards {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.cards.three { grid-template-columns: 1fr 1fr 1fr; }
+.cards.two { grid-template-columns: 1fr 1fr; }
+
+.card {
+  aspect-ratio: 5 / 7;
+  border: 1px solid var(--border);
+  background: var(--bg-2);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+
+.card.preview { cursor: default; }
+
+.card.clean {
+  border-color: var(--green);
+  background: linear-gradient(135deg, var(--bg-2) 0%, rgba(74, 252, 106, 0.06) 100%);
+}
+
+.card.compromised {
+  border-color: var(--red);
+  background: linear-gradient(135deg, var(--bg-2) 0%, rgba(255, 56, 56, 0.06) 100%);
+}
+
+.card:not(.preview):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 18px rgba(74, 252, 106, 0.15);
+}
+
+.card.clean:not(.preview):hover { box-shadow: 0 4px 18px rgba(74, 252, 106, 0.3); }
+.card.compromised:not(.preview):hover { box-shadow: 0 4px 18px rgba(255, 56, 56, 0.3); }
+
+.card .corner {
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.card.clean .corner { color: var(--green); }
+.card.compromised .corner { color: var(--red); }
+
+.card .body {
+  text-align: center;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.card .symbol {
+  font-size: 36px;
+  font-family: var(--display);
+  margin-bottom: 4px;
+  line-height: 1;
+}
+
+.card.clean .symbol { color: var(--green); text-shadow: 0 0 12px var(--green-glow); }
+.card.compromised .symbol { color: var(--red); text-shadow: 0 0 12px var(--red-glow); }
+
+.card .label {
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.card.compromised .label { color: var(--red); }
+.card.clean .label { color: var(--green); }
+
+/* ============ Role reveal ============ */
+
+.role-card {
+  border: 2px solid var(--border);
+  background: var(--bg-2);
+  padding: 32px 20px;
+  text-align: center;
+  margin: 20px 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.role-card.role-loyalist {
+  border-color: var(--green);
+  background: linear-gradient(180deg, rgba(74, 252, 106, 0.08) 0%, var(--bg-2) 100%);
+  box-shadow: 0 0 40px rgba(74, 252, 106, 0.15), inset 0 0 60px rgba(74, 252, 106, 0.04);
+}
+
+.role-card.role-mole {
+  border-color: var(--red);
+  background: linear-gradient(180deg, rgba(255, 56, 56, 0.08) 0%, var(--bg-2) 100%);
+  box-shadow: 0 0 40px rgba(255, 56, 56, 0.18), inset 0 0 60px rgba(255, 56, 56, 0.04);
+}
+
+.role-card.role-chief {
+  border-color: var(--amber);
+  background: linear-gradient(180deg, rgba(255, 184, 74, 0.08) 0%, var(--bg-2) 100%);
+  box-shadow: 0 0 40px rgba(255, 184, 74, 0.18), inset 0 0 60px rgba(255, 184, 74, 0.04);
+}
+
+.role-card .stamp-pre {
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+
+.role-card .role-name {
+  font-family: var(--display);
+  font-size: 42px;
+  letter-spacing: 0.05em;
+  margin: 8px 0;
+  line-height: 1;
+}
+
+.role-card.role-loyalist .role-name { color: var(--green); }
+.role-card.role-mole .role-name { color: var(--red); }
+.role-card.role-chief .role-name { color: var(--amber); }
+
+.role-card .role-desc {
+  font-size: 13px;
+  color: var(--text);
+  margin: 16px 0 8px;
+  line-height: 1.5;
+}
+
+.role-card .teammates {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--border);
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+
+.role-card .teammate {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text);
+  text-transform: none;
+  letter-spacing: 0.05em;
+  margin-top: 4px;
+}
+
+/* ============ Game over ============ */
+
+.gameover-banner {
+  text-align: center;
+  padding: 32px 16px;
+  border: 2px solid var(--green);
+  background: linear-gradient(180deg, rgba(74, 252, 106, 0.1) 0%, var(--bg-2) 100%);
+  margin-bottom: 16px;
+}
+
+.gameover-banner.moles {
+  border-color: var(--red);
+  background: linear-gradient(180deg, rgba(255, 56, 56, 0.1) 0%, var(--bg-2) 100%);
+}
+
+.gameover-banner h1 {
+  font-size: 36px;
+}
+
+.gameover-banner.loyalists h1 { color: var(--green); }
+.gameover-banner.moles h1 { color: var(--red); }
+
+.gameover-banner .reason {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-top: 8px;
+}
+
+/* ============ Chat ============ */
+
+.chat-toggle {
+  position: fixed;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  right: 12px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--bg-2);
+  border: 2px solid var(--green);
+  color: var(--green);
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(74, 252, 106, 0.25);
+  z-index: 50;
+  font-family: var(--mono);
+}
+
+.chat-toggle::before { display: none; }
+.chat-toggle .badge-count {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--red);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chat-panel {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  padding-top: max(12px, env(safe-area-inset-top));
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  transform: translateY(100%);
+  transition: transform 0.25s ease;
+}
+
+.chat-panel.open { transform: translateY(0); }
+
+.chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 16px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.chat-header h3 { color: var(--green); }
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.msg {
+  font-size: 13px;
+  line-height: 1.4;
+  padding: 6px 0;
+}
+
+.msg .mh {
+  font-size: 10px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 2px;
+}
+.msg .mh .nm { color: var(--green); }
+.msg.system .mh .nm { color: var(--amber); }
+
+.msg .body { color: var(--text); }
+.msg.system .body { color: var(--text-dim); font-style: italic; }
+.msg.bot .mh .nm { color: #b58aff; }
+
+.chat-input {
+  display: flex;
+  padding: 8px 12px 0;
+  border-top: 1px solid var(--border);
+  gap: 8px;
+}
+
+.chat-input input {
+  flex: 1;
+}
+
+.chat-input button {
+  width: auto;
+  padding: 0 16px;
+  min-height: auto;
+}
+
+/* ============ Log ============ */
+
+.log {
+  border: 1px solid var(--border);
+  background: var(--bg-2);
+  padding: 10px 12px;
+  margin-top: 12px;
+  max-height: 180px;
+  overflow-y: auto;
+  font-size: 11px;
+  line-height: 1.6;
+  -webkit-overflow-scrolling: touch;
+}
+
+.log-title {
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
+.log-entry {
+  color: var(--text-dim);
+  padding: 1px 0;
+}
+
+.log-entry::before {
+  content: '> ';
+  color: var(--green);
+}
+
+/* ============ Animations ============ */
+
+@keyframes glitch {
+  0%, 100% { transform: translate(0); }
+  20% { transform: translate(-1px, 1px); }
+  40% { transform: translate(1px, -1px); }
+  60% { transform: translate(-1px, -1px); }
+  80% { transform: translate(1px, 1px); }
+}
+
+.glitch { animation: glitch 0.2s ease-in-out; }
+
+@keyframes scan {
+  from { background-position: 0 -100%; }
+  to { background-position: 0 100%; }
+}
+
+@keyframes fadeup {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.screen > * {
+  animation: fadeup 0.3s ease;
+}
+
+@keyframes typewriter {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+.cursor-blink::after {
+  content: '_';
+  animation: blink 1s step-end infinite;
+  margin-left: 2px;
+  color: var(--green);
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  top: max(16px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translate(-50%, -120%);
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  padding: 10px 16px;
+  font-size: 12px;
+  z-index: 200;
+  transition: transform 0.25s ease;
+  max-width: 90%;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+}
+
+.toast.show { transform: translate(-50%, 0); }
+.toast.error { border-color: var(--red); color: var(--red); }
+.toast.success { border-color: var(--green); color: var(--green); }
+
+/* Spinner */
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--text-dim);
+  border-top-color: var(--green);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  vertical-align: middle;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Scroll override for safe areas */
+.scroller {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Sticky bottom area for vote/action buttons */
+.action-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+/* Phase banner */
+.phase-banner {
+  padding: 10px 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--green);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  color: var(--green);
+}
+
+.phase-banner.warn {
+  border-left-color: var(--amber);
+  color: var(--amber);
+}
+
+.phase-banner.urgent {
+  border-left-color: var(--red);
+  color: var(--red);
+  animation: pulse 1.5s infinite;
+}
+
+/* Settings dialog */
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.dialog {
+  background: var(--bg-2);
+  border: 1px solid var(--border-hot);
+  padding: 20px;
+  width: 100%;
+  max-width: 400px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Cover identity choice — distinct visual */
+.cover-choice {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.cover-card {
+  border: 1px solid var(--border);
+  padding: 18px 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.cover-card:hover {
+  border-color: var(--green);
+  background: var(--bg-3);
+}
+
+.cover-card.loyalist:hover {
+  border-color: var(--green);
+  box-shadow: 0 0 20px rgba(74, 252, 106, 0.2);
+}
+
+.cover-card.mole:hover {
+  border-color: var(--red);
+  box-shadow: 0 0 20px rgba(255, 56, 56, 0.2);
+}
+
+.cover-card .label {
+  font-family: var(--display);
+  font-size: 18px;
+  margin-bottom: 6px;
+}
+
+.cover-card.loyalist .label { color: var(--green); }
+.cover-card.mole .label { color: var(--red); }
+
+.cover-card .sub {
+  font-size: 10px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* Vote display */
+.vote-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.vote-bucket {
+  border: 1px solid var(--border);
+  padding: 10px;
+  text-align: center;
+}
+
+.vote-bucket.approve { border-color: var(--green); }
+.vote-bucket.reject { border-color: var(--red); }
+
+.vote-bucket .count {
+  font-size: 28px;
+  font-family: var(--display);
+  line-height: 1;
+}
+
+.vote-bucket.approve .count { color: var(--green); }
+.vote-bucket.reject .count { color: var(--red); }
+
+.vote-bucket .lbl {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* Power-specific */
+.power-banner {
+  padding: 16px;
+  border: 2px solid var(--amber);
+  background: linear-gradient(135deg, rgba(255, 184, 74, 0.1) 0%, var(--bg-2) 100%);
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.power-banner h2 {
+  color: var(--amber);
+  font-size: 22px;
+}
+
+.power-banner .desc {
+  font-size: 12px;
+  color: var(--text);
+  margin-top: 6px;
+}
+
+/* Hide scrollbars on iOS for fixed-height scrollers */
+.log::-webkit-scrollbar, .chat-messages::-webkit-scrollbar { width: 4px; }
+.log::-webkit-scrollbar-thumb, .chat-messages::-webkit-scrollbar-thumb {
+  background: var(--border);
+}
+
+@media (max-width: 360px) {
+  body { font-size: 13px; }
+  .brand h1 { font-size: 30px; }
+  h1 { font-size: 22px; }
+  .role-card .role-name { font-size: 32px; }
+  .gameover-banner h1 { font-size: 28px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div id="screen-root" class="screen">
+    <!-- screens render here -->
+  </div>
+  <button id="chat-toggle" class="chat-toggle hidden" aria-label="Open chat">
+    ⌬
+  </button>
+  <div id="chat-panel" class="chat-panel">
+    <div class="chat-header">
+      <h3>// Comms Channel</h3>
+      <button class="icon" onclick="toggleChat()">×</button>
+    </div>
+    <div id="chat-messages" class="chat-messages"></div>
+    <div class="chat-input">
+      <input type="text" id="chat-input" placeholder="Transmit message..." maxlength="280">
+      <button class="primary" onclick="sendChat()">SEND</button>
+    </div>
+  </div>
+  <div id="toast" class="toast"></div>
+</div>
+
+<script>
+// =============================================================================
+//  THE BADDIES — client-side controller
+// =============================================================================
+
+const API = '/api/baddies';
+const POLL_MS = 1500;
+const STORAGE_KEY = 'baddies:session';
+
+const state = {
+  session: null,         // {code, playerId, token}
+  game: null,            // last redacted state from server
+  selectedTarget: null,  // for nominate / power UIs
+  selectedCard: null,    // for handler/operative play
+  pollTimer: null,
+  unreadChat: 0,
+  chatOpen: false,
+  rolesShown: false,     // have we shown the role reveal screen?
+  lastRound: 0,          // for tracking round changes
+  lastPhase: null,
+  botBusy: false,        // bot driver lock
+  lastBotChatTs: 0,      // throttle bot chat
+  fetchErrCount: 0
+};
+
+// ===== Storage =====
+function saveSession(session) {
+  state.session = session;
+  if (session) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(session)); } catch (e) {}
+  } else {
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+  }
+}
+function loadSession() {
+  try {
+    const s = localStorage.getItem(STORAGE_KEY);
+    return s ? JSON.parse(s) : null;
+  } catch (e) { return null; }
+}
+
+// ===== HTTP =====
+async function api(path, body, method = 'POST') {
+  const opts = { method, headers: { 'content-type': 'application/json' } };
+  if (method === 'POST') opts.body = JSON.stringify(body);
+  const url = method === 'GET' ? `${API}/${path}?${new URLSearchParams(body).toString()}` : `${API}/${path}`;
+  const res = await fetch(url, opts);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data;
+}
+
+// ===== Toast =====
+let toastTimer;
+function toast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `toast show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+// ===== Polling =====
+function startPolling() {
+  stopPolling();
+  pollOnce();
+  state.pollTimer = setInterval(pollOnce, POLL_MS);
+}
+function stopPolling() {
+  if (state.pollTimer) { clearInterval(state.pollTimer); state.pollTimer = null; }
+}
+async function pollOnce() {
+  if (!state.session) return;
+  try {
+    const since = state.game?.updatedAt || 0;
+    const data = await api('state', { ...state.session, since }, 'GET');
+    state.fetchErrCount = 0;
+    if (data.unchanged) return;
+    state.game = data;
+    onStateUpdate();
+  } catch (e) {
+    state.fetchErrCount++;
+    if (state.fetchErrCount > 3) {
+      toast(`Connection issue: ${e.message}`, 'error');
+    }
+    if (e.message && e.message.toLowerCase().includes('not found')) {
+      stopPolling();
+      saveSession(null);
+      render();
+      toast('Game ended or expired.', 'error');
+    }
+  }
+}
+
+// =====================================================================
+// State update handler — the main render trigger + bot driver tick
+// =====================================================================
+function onStateUpdate() {
+  const g = state.game;
+  if (!g) return;
+
+  // Detect round/phase change → reset card selection
+  if (state.lastPhase !== g.state.phase) {
+    state.selectedCard = null;
+    state.selectedTarget = null;
+    state.lastPhase = g.state.phase;
+  }
+
+  // Notify on chat
+  if (g.chat && g.chat.length) {
+    const lastSeenTs = Number(localStorage.getItem(`${STORAGE_KEY}:chatTs:${g.code}`) || 0);
+    const newMsgs = g.chat.filter(m => m.ts > lastSeenTs && m.playerId !== state.session.playerId);
+    if (newMsgs.length && !state.chatOpen) {
+      state.unreadChat += newMsgs.length;
+      const last = newMsgs[newMsgs.length - 1];
+      if (!last.system) {
+        toast(`💬 ${last.name}: ${last.text.substring(0, 50)}${last.text.length > 50 ? '...' : ''}`);
+      }
+    }
+  }
+
+  render();
+
+  // Bot driver — only host runs this
+  if (g.host === state.session.playerId && g.status === 'playing') {
+    setTimeout(driveBots, 600 + Math.random() * 800); // jitter
+  }
+}
+
+// =====================================================================
+// RENDERING
+// =====================================================================
+
+function render() {
+  const root = document.getElementById('screen-root');
+  if (!state.session) {
+    root.innerHTML = renderWelcome();
+    document.getElementById('chat-toggle').classList.add('hidden');
+    return;
+  }
+  if (!state.game) {
+    root.innerHTML = `<div class="brand"><div class="pre">// connecting</div><h1>THE <span>BADDIES</span></h1></div><div class="center dim">Establishing secure channel<span class="cursor-blink"></span></div>`;
+    return;
+  }
+  const g = state.game;
+  document.getElementById('chat-toggle').classList.remove('hidden');
+  updateChatBadge();
+
+  // Render header always
+  const headerHtml = renderHeader();
+
+  if (g.status === 'lobby') {
+    root.innerHTML = headerHtml + renderLobby();
+  } else if (g.status === 'finished') {
+    root.innerHTML = headerHtml + renderGameOver();
+  } else {
+    // Playing — show role first time, then game screen
+    if (!state.rolesShown && g.you && g.you.role) {
+      root.innerHTML = headerHtml + renderRoleReveal();
+    } else {
+      root.innerHTML = headerHtml + renderGame();
+    }
+  }
+  // Refresh chat panel
+  renderChat();
+}
+
+function renderHeader() {
+  const g = state.game;
+  if (!g) return '';
+  const you = g.you;
+  return `
+    <div class="header">
+      <div><span class="dim">CODE</span> <span class="code">${g.code}</span></div>
+      <div class="player">
+        <span>${esc(you?.name || '???')}</span>
+        ${you?.role ? `<span class="badge role-${you.role}">${you.role.toUpperCase()}</span>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+// =====================================================================
+// WELCOME SCREEN
+// =====================================================================
+
+function renderWelcome() {
+  return `
+    <div class="brand">
+      <div class="pre">// THE AGENCY // CLEARANCE LEVEL: REDACTED</div>
+      <h1>THE <span>BADDIES</span></h1>
+      <div class="sub">SOCIAL DEDUCTION // SPY THRILLER</div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">New Operative</div>
+      <label for="name-input">Codename</label>
+      <input type="text" id="name-input" placeholder="Enter your codename..." maxlength="20" autocomplete="off">
+      <div class="btn-row two">
+        <button class="primary" onclick="hostGame()">HOST GAME</button>
+        <button onclick="showJoin()">JOIN GAME</button>
+      </div>
+    </div>
+    <div id="join-form" class="panel hidden">
+      <div class="panel-title">Join Existing Operation</div>
+      <label for="code-input">Game Code</label>
+      <input type="text" id="code-input" placeholder="6 LETTERS..." maxlength="6" style="text-transform:uppercase; letter-spacing:0.3em;" autocomplete="off">
+      <div class="btn-row">
+        <button class="primary" onclick="joinGame()">CONNECT</button>
+      </div>
+    </div>
+    <div class="panel" style="margin-top:16px;">
+      <div class="panel-title">Briefing</div>
+      <p style="font-size:12px; color:var(--text-dim); line-height:1.6;">
+        The Agency is compromised. Hidden among the loyal operatives are <span class="red">moles</span> working for a rival faction.
+        Each round, a Handler nominates an Operative to execute a mission. Vote to approve or reject. Enact <span class="green">5 Clean</span> missions to win — but if <span class="red">6 Compromised</span> deploy, the moles take control.
+      </p>
+      <p style="font-size:11px; color:var(--text-faint); margin-top:8px;">3–10 humans • bots fill empty seats • mobile-optimized</p>
+    </div>
+  `;
+}
+
+function showJoin() {
+  document.getElementById('join-form').classList.toggle('hidden');
+}
+
+async function hostGame() {
+  const name = document.getElementById('name-input').value.trim();
+  if (!name) { toast('Enter a codename first', 'error'); return; }
+  try {
+    const data = await api('create', { name, settings: { aiChat: false, coverIdentity: true } });
+    saveSession({ code: data.code, playerId: data.playerId, token: data.token });
+    startPolling();
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
+async function joinGame() {
+  const name = document.getElementById('name-input').value.trim();
+  const code = document.getElementById('code-input').value.trim().toUpperCase();
+  if (!name) { toast('Enter a codename first', 'error'); return; }
+  if (!code || code.length !== 6) { toast('Enter the 6-letter game code', 'error'); return; }
+  try {
+    const data = await api('join', { code, name });
+    saveSession({ code: data.code, playerId: data.playerId, token: data.token });
+    startPolling();
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
+// =====================================================================
+// LOBBY
+// =====================================================================
+
+function renderLobby() {
+  const g = state.game;
+  const isHost = g.host === state.session.playerId;
+  const canStart = g.players.length >= 3 || isHost; // host can fill with bots
+  const playersList = g.players.map(p => `
+    <div class="player-row ${p.id === state.session.playerId ? 'is-self' : ''}">
+      <div class="avatar">${initials(p.name)}</div>
+      <div class="nm">
+        ${esc(p.name)}
+        ${p.id === g.host ? '<span class="badge host">HOST</span>' : ''}
+        ${p.id === state.session.playerId ? '<span class="badge you">YOU</span>' : ''}
+        ${p.isBot ? '<span class="badge bot">BOT</span>' : ''}
+      </div>
+      ${isHost && p.id !== g.host ? `<button class="icon" onclick="removePlayer('${p.id}')" aria-label="Remove">×</button>` : ''}
+    </div>
+  `).join('');
+
+  return `
+    <div class="panel hot">
+      <div class="panel-title">Lobby Active</div>
+      <div class="kv"><span class="k">Game Code</span><span class="v" style="color:var(--green); letter-spacing:0.3em; font-size:18px;">${g.code}</span></div>
+      <div class="kv"><span class="k">Operatives</span><span class="v">${g.players.length} / 10</span></div>
+      <div class="kv"><span class="k">Status</span><span class="v">Awaiting deployment<span class="cursor-blink"></span></span></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Players</div>
+      <div class="players">${playersList}</div>
+      ${isHost ? `
+        <div class="btn-row two">
+          <button onclick="addBot()" ${g.players.length >= 10 ? 'disabled' : ''}>+ ADD BOT</button>
+          <button onclick="showSettings()">SETTINGS</button>
+        </div>
+      ` : ''}
+    </div>
+
+    ${isHost ? `
+      <div class="action-stack">
+        ${g.players.length < 5 ? `<div class="phase-banner warn">Need ${5 - g.players.length} more (bots will auto-fill on start)</div>` : ''}
+        <button class="primary" onclick="startGameAction()" style="font-size:15px; min-height:54px;">
+          ▶ INITIATE OPERATION
+        </button>
+      </div>
+    ` : `
+      <div class="phase-banner">Waiting for host to start...</div>
+    `}
+
+    <button class="subtle" onclick="leaveGame()" style="margin-top:16px;">EXIT TERMINAL</button>
+  `;
+}
+
+async function addBot() {
+  try { await api('action', { ...state.session, action: 'addBot' }); } catch (e) { toast(e.message, 'error'); }
+}
+
+async function removePlayer(targetId) {
+  try { await api('action', { ...state.session, action: 'removePlayer', payload: { targetId } }); } catch (e) { toast(e.message, 'error'); }
+}
+
+async function startGameAction() {
+  try {
+    await api('action', { ...state.session, action: 'start' });
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
+function showSettings() {
+  const g = state.game;
+  const overlay = document.createElement('div');
+  overlay.className = 'dialog-overlay';
+  overlay.innerHTML = `
+    <div class="dialog">
+      <h3 style="margin-bottom:14px; color:var(--green);">// Operation Settings</h3>
+      <div class="toggle ${g.settings.coverIdentity ? 'on' : ''}" onclick="toggleSetting(this, 'coverIdentity')">
+        <div>
+          <div class="lbl">Cover Identity</div>
+          <div class="desc">Investigated agents may lie about their role</div>
+        </div>
+        <div class="sw"></div>
+      </div>
+      <div class="toggle ${g.settings.aiChat ? 'on' : ''}" onclick="toggleSetting(this, 'aiChat')">
+        <div>
+          <div class="lbl">AI Bot Chat</div>
+          <div class="desc">Bots send chat messages (uses Claude API)</div>
+        </div>
+        <div class="sw"></div>
+      </div>
+      <button onclick="this.parentElement.parentElement.remove()" style="margin-top:14px;">CLOSE</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+}
+
+async function toggleSetting(el, key) {
+  el.classList.toggle('on');
+  const value = el.classList.contains('on');
+  try {
+    await api('action', { ...state.session, action: 'updateSettings', payload: { [key]: value } });
+  } catch (e) {
+    toast(e.message, 'error');
+    el.classList.toggle('on'); // revert
+  }
+}
+
+function leaveGame() {
+  if (!confirm('Exit this operation?')) return;
+  stopPolling();
+  saveSession(null);
+  state.game = null;
+  state.rolesShown = false;
+  render();
+}
+
+// =====================================================================
+// ROLE REVEAL
+// =====================================================================
+
+function renderRoleReveal() {
+  const g = state.game;
+  const you = g.you;
+  let desc, name;
+  if (you.role === 'loyalist') {
+    name = 'LOYALIST';
+    desc = 'You are a loyal Agency operative. Identify the moles among you and enact <span class="green">5 Clean missions</span> to secure the Agency.';
+  } else if (you.role === 'mole') {
+    name = 'MOLE';
+    desc = 'You are a <span class="red">MOLE</span> — secretly working for the rival faction. Sow chaos, pass <span class="red">6 Compromised missions</span>, or get the Mole Chief elected as Operative after 3 compromised.';
+  } else if (you.role === 'chief') {
+    name = 'MOLE CHIEF';
+    desc = 'You are the <span class="amber">MOLE CHIEF</span> — the deepest cover. Stay hidden. If elected Operative after 3 compromised missions, your team wins instantly. Don\'t get terminated.';
+  }
+
+  let teammatesHtml = '';
+  if (you.knowsMoles && you.teammates.length) {
+    teammatesHtml = `
+      <div class="teammates">
+        Known associates:
+        ${you.teammates.map(t => `<div class="teammate">› ${esc(t.name)} <span class="dim">(${t.role})</span></div>`).join('')}
+      </div>
+    `;
+  } else if (you.role === 'chief' && g.players.length > 6) {
+    teammatesHtml = `<div class="teammates">In games of 7+, the Chief operates without knowing the moles. The moles know YOU.</div>`;
+  }
+
+  return `
+    <div class="role-card role-${you.role}">
+      <div class="stamp-pre">// CLASSIFIED // EYES ONLY</div>
+      <div class="role-name">${name}</div>
+      <div class="role-desc">${desc}</div>
+      ${teammatesHtml}
+    </div>
+    <button class="primary" onclick="acknowledgeRole()" style="font-size:15px; min-height:54px;">
+      MEMORIZE & PROCEED
+    </button>
+    <p class="tiny dim center" style="margin-top:12px;">This dossier will not be shown again.</p>
+  `;
+}
+
+function acknowledgeRole() {
+  state.rolesShown = true;
+  render();
+}
+
+// =====================================================================
+// MAIN GAME SCREEN
+// =====================================================================
+
+function renderGame() {
+  const g = state.game;
+  const you = g.you;
+  const phase = g.state.phase;
+  const handler = g.players[g.state.handlerIdx];
+  const operative = g.state.operativeIdx !== null ? g.players[g.state.operativeIdx] : null;
+  const isHandler = handler && handler.id === state.session.playerId;
+  const isOperative = operative && operative.id === state.session.playerId;
+
+  // Track display
+  const tracksHtml = renderTracks();
+
+  // Players
+  const playersHtml = renderPlayers();
+
+  // Phase-specific area
+  let phaseArea = '';
+  if (phase === 'nominate') {
+    phaseArea = renderNominate(isHandler);
+  } else if (phase === 'vote') {
+    phaseArea = renderVote();
+  } else if (phase === 'voteResult') {
+    phaseArea = renderVoteResult();
+  } else if (phase === 'handlerDraw') {
+    phaseArea = renderHandlerDraw(isHandler);
+  } else if (phase === 'operativePlay') {
+    phaseArea = renderOperativePlay(isOperative);
+  } else if (phase === 'power') {
+    phaseArea = renderPower(isHandler);
+  } else if (phase === 'coverChoice') {
+    phaseArea = renderCoverChoice();
+  }
+
+  // Log
+  const logHtml = renderLog();
+
+  return `
+    <div class="phase-banner ${phaseClass(phase)}">${phaseLabel(phase, isHandler, isOperative, handler, operative)}</div>
+    ${tracksHtml}
+    ${phaseArea}
+    <div class="panel">
+      <div class="panel-title">Operatives</div>
+      ${playersHtml}
+    </div>
+    ${logHtml}
+  `;
+}
+
+function phaseClass(phase) {
+  if (phase === 'vote') return 'urgent';
+  if (phase === 'power' || phase === 'coverChoice') return 'warn';
+  return '';
+}
+
+function phaseLabel(phase, isHandler, isOperative, handler, operative) {
+  switch (phase) {
+    case 'nominate': return isHandler
+      ? `▸ YOUR MOVE: Nominate an Operative`
+      : `Awaiting Handler: ${esc(handler.name)}`;
+    case 'vote': return `▸ VOTE: Approve or reject ${esc(handler.name)} + ${esc(operative.name)}`;
+    case 'voteResult': return 'Vote resolving...';
+    case 'handlerDraw': return isHandler
+      ? `▸ YOUR MOVE: Discard 1 of 3 mission cards`
+      : `Handler ${esc(handler.name)} reviewing missions...`;
+    case 'operativePlay': return isOperative
+      ? `▸ YOUR MOVE: Enact 1 of 2 missions`
+      : `Operative ${esc(operative.name)} executing mission...`;
+    case 'power': return isHandler
+      ? `▸ YOUR MOVE: Use Director Power`
+      : `Handler ${esc(handler.name)} exercising power...`;
+    case 'coverChoice': return 'Investigation in progress...';
+    default: return phase;
+  }
+}
+
+function renderTracks() {
+  const g = state.game;
+  const n = g.players.length;
+  // Power markers per Secret Hitler table
+  const POWER_TABLE = {
+    5: { 3: 'I', 4: 'E', 5: 'T' },
+    6: { 3: 'I', 4: 'E', 5: 'T' },
+    7: { 2: 'I', 3: 'E', 4: 'T', 5: 'T' },
+    8: { 2: 'I', 3: 'E', 4: 'T', 5: 'T' },
+    9: { 1: 'I', 2: 'I', 3: 'E', 4: 'T', 5: 'T' },
+    10: { 1: 'I', 2: 'I', 3: 'E', 4: 'T', 5: 'T' }
+  };
+  const PEEK = { 5: 2, 6: 2 };
+  const cleanCount = g.state.missionTrack?.clean || 0;
+  const compCount = g.state.missionTrack?.compromised || 0;
+  const cleanCells = [];
+  for (let i = 1; i <= 5; i++) {
+    cleanCells.push(`<div class="cell ${i <= cleanCount ? 'filled clean' : ''}"></div>`);
+  }
+  const compCells = [];
+  for (let i = 1; i <= 6; i++) {
+    let pm = '';
+    if (PEEK[n] === i) pm = 'power-marker';
+    if (POWER_TABLE[n] && POWER_TABLE[n][i]) pm = 'power-marker';
+    compCells.push(`<div class="cell ${pm} ${i <= compCount ? 'filled compromised' : ''}"></div>`);
+  }
+  return `
+    <div class="tracks">
+      <div class="track">
+        <div class="track-label"><span>CLEAN MISSIONS</span><span class="green">${cleanCount} / 5</span></div>
+        <div class="track-cells">${cleanCells.join('')}</div>
+      </div>
+      <div class="track">
+        <div class="track-label"><span>COMPROMISED</span><span class="red">${compCount} / 6</span></div>
+        <div class="track-cells">${compCells.join('')}</div>
+      </div>
+    </div>
+    ${g.state.rejectionCount > 0 ? `<div class="phase-banner warn">⚠ FAILED VOTES: ${g.state.rejectionCount} / 3 — chaos at 3</div>` : ''}
+  `;
+}
+
+function renderPlayers() {
+  const g = state.game;
+  return `<div class="players">${g.players.map(p => {
+    const isMe = p.id === state.session.playerId;
+    const isH = g.state.handlerIdx === g.players.indexOf(p);
+    const isO = g.state.operativeIdx === g.players.indexOf(p);
+    const voteState = g.votes && g.votes[p.id];
+    let voteBadge = '';
+    if (g.state.phase === 'vote' && voteState) {
+      if (voteState === 'pending') voteBadge = '<span class="badge vote-pending">…</span>';
+      else if (isMe) voteBadge = `<span class="badge vote-${voteState}">${voteState.toUpperCase()}</span>`;
+      else voteBadge = '<span class="badge vote-pending">VOTED</span>';
+    } else if (g.state.phase === 'voteResult' && voteState) {
+      voteBadge = `<span class="badge vote-${voteState}">${voteState.toUpperCase()}</span>`;
+    }
+    let roleBadge = '';
+    if (p.role && p.id !== state.session.playerId) {
+      roleBadge = `<span class="badge role-${p.role}">${p.role.toUpperCase()}</span>`;
+    }
+    return `
+      <div class="player-row ${isMe ? 'is-self' : ''} ${isH ? 'is-handler' : ''} ${isO ? 'is-operative' : ''} ${!p.alive ? 'dead' : ''}">
+        <div class="avatar">${initials(p.name)}</div>
+        <div class="nm">
+          ${esc(p.name)}
+          ${isMe ? '<span class="badge you">YOU</span>' : ''}
+          ${isH ? '<span class="badge handler">HANDLER</span>' : ''}
+          ${isO ? '<span class="badge operative">OPERATIVE</span>' : ''}
+          ${p.isBot ? '<span class="badge bot">BOT</span>' : ''}
+          ${roleBadge}
+          ${voteBadge}
+        </div>
+      </div>
+    `;
+  }).join('')}</div>`;
+}
+
+function renderNominate(isHandler) {
+  const g = state.game;
+  if (!isHandler) return '';
+  // Eligible operatives
+  const eligible = g.players.filter((p, i) => {
+    if (i === g.state.handlerIdx) return false;
+    if (!p.alive) return false;
+    if (g.state.lastOperative === i) return false;
+    const aliveCount = g.players.filter(x => x.alive).length;
+    if (aliveCount > 5 && g.state.lastHandler === i) return false;
+    return true;
+  });
+  return `
+    <div class="panel hot">
+      <div class="panel-title">Select Operative</div>
+      <div class="players">
+        ${eligible.map(p => `
+          <div class="player-row selectable ${state.selectedTarget === p.id ? 'selected' : ''}" onclick="selectTarget('${p.id}')">
+            <div class="avatar">${initials(p.name)}</div>
+            <div class="nm">${esc(p.name)} ${p.isBot ? '<span class="badge bot">BOT</span>' : ''}</div>
+          </div>
+        `).join('')}
+      </div>
+      <button class="primary" onclick="confirmNominate()" ${!state.selectedTarget ? 'disabled' : ''}>
+        CONFIRM NOMINATION
+      </button>
+    </div>
+  `;
+}
+
+function selectTarget(id) {
+  state.selectedTarget = id;
+  render();
+}
+
+async function confirmNominate() {
+  if (!state.selectedTarget) return;
+  try {
+    await api('action', { ...state.session, action: 'nominate', payload: { targetId: state.selectedTarget } });
+    state.selectedTarget = null;
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+function renderVote() {
+  const g = state.game;
+  const handler = g.players[g.state.handlerIdx];
+  const operative = g.players[g.state.operativeIdx];
+  const myVote = g.votes && g.votes[state.session.playerId];
+  const myVoteIsActive = myVote && myVote !== 'pending';
+  const you = g.you;
+  if (!you.alive) return `<div class="phase-banner">You are eliminated and cannot vote.</div>`;
+  return `
+    <div class="panel hot">
+      <div class="panel-title">Voting</div>
+      <div class="kv"><span class="k">Handler</span><span class="v">${esc(handler.name)}</span></div>
+      <div class="kv"><span class="k">Operative</span><span class="v">${esc(operative.name)}</span></div>
+      ${myVoteIsActive ? `
+        <div class="phase-banner" style="margin-top:12px;">Your vote: <strong>${myVote.toUpperCase()}</strong> — awaiting others...</div>
+      ` : `
+        <div class="btn-row two" style="margin-top:14px;">
+          <button class="primary" onclick="castVote('approve')">✓ APPROVE</button>
+          <button class="danger" onclick="castVote('reject')">✗ REJECT</button>
+        </div>
+      `}
+    </div>
+  `;
+}
+
+async function castVote(value) {
+  try {
+    await api('action', { ...state.session, action: 'vote', payload: { value } });
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+function renderVoteResult() {
+  // Server transitions out of this fast — just show a brief loader
+  return `<div class="phase-banner">Tallying votes<span class="cursor-blink"></span></div>`;
+}
+
+function renderHandlerDraw(isHandler) {
+  const g = state.game;
+  if (!isHandler) {
+    return `<div class="panel"><div class="panel-title">Awaiting Handler</div><p class="dim">Handler is reviewing 3 mission cards.</p></div>`;
+  }
+  const cards = g.state.currentDraw?.cards || [];
+  return `
+    <div class="panel hot">
+      <div class="panel-title">Discard 1 — Pass 2 to Operative</div>
+      <p class="tiny dim" style="margin-bottom:12px;">Tap the card you want to <span class="red">DISCARD</span>. The remaining two go to the Operative.</p>
+      <div class="cards three">
+        ${cards.map((c, i) => renderCard(c, i, state.selectedCard === i)).join('')}
+      </div>
+      <button class="danger" onclick="confirmDiscard()" ${state.selectedCard === null ? 'disabled' : ''}>
+        DISCARD SELECTED
+      </button>
+    </div>
+  `;
+}
+
+function renderOperativePlay(isOperative) {
+  const g = state.game;
+  if (!isOperative) {
+    return `<div class="panel"><div class="panel-title">Awaiting Operative</div><p class="dim">Operative is choosing which mission to enact.</p></div>`;
+  }
+  const cards = g.state.currentDraw?.cards || [];
+  return `
+    <div class="panel hot">
+      <div class="panel-title">Enact 1 Mission</div>
+      <p class="tiny dim" style="margin-bottom:12px;">Tap the card you want to <span class="green">ENACT</span>.</p>
+      <div class="cards two">
+        ${cards.map((c, i) => renderCard(c, i, state.selectedCard === i)).join('')}
+      </div>
+      <button class="primary" onclick="confirmEnact()" ${state.selectedCard === null ? 'disabled' : ''}>
+        ENACT SELECTED MISSION
+      </button>
+    </div>
+  `;
+}
+
+function renderCard(card, idx, selected) {
+  const sym = card === 'clean' ? '◉' : '◈';
+  const label = card === 'clean' ? 'CLEAN' : 'COMPROMISED';
+  return `
+    <div class="card ${card} ${selected ? 'selected' : ''}" onclick="selectCard(${idx})" style="${selected ? 'transform:translateY(-4px); box-shadow:0 6px 24px rgba(74,252,106,0.35);' : ''}">
+      <div class="corner">${label}</div>
+      <div class="body">
+        <div class="symbol">${sym}</div>
+        <div class="label">${label}</div>
+      </div>
+      <div class="corner" style="text-align:right;">${label}</div>
+    </div>
+  `;
+}
+
+function selectCard(idx) {
+  state.selectedCard = idx;
+  render();
+}
+
+async function confirmDiscard() {
+  if (state.selectedCard === null) return;
+  try {
+    await api('action', { ...state.session, action: 'handlerDiscard', payload: { cardIdx: state.selectedCard } });
+    state.selectedCard = null;
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+async function confirmEnact() {
+  if (state.selectedCard === null) return;
+  try {
+    await api('action', { ...state.session, action: 'operativeEnact', payload: { cardIdx: state.selectedCard } });
+    state.selectedCard = null;
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+// =====================================================================
+// POWERS
+// =====================================================================
+
+function renderPower(isHandler) {
+  const g = state.game;
+  const power = g.state.pendingPower;
+  if (!isHandler) {
+    return `<div class="panel danger"><div class="panel-title">Director Power Active</div><p>Handler ${esc(g.players[g.state.handlerIdx].name)} is using the <strong>${power.type}</strong> power.</p></div>`;
+  }
+  const handler = g.players[g.state.handlerIdx];
+
+  if (power.type === 'peek' && !power.viewed) {
+    return `
+      <div class="power-banner">
+        <h2>// PEEK</h2>
+        <div class="desc">View the top 3 cards of the mission deck.</div>
+      </div>
+      <button class="primary" onclick="usePeek()">REVEAL TOP 3</button>
+    `;
+  }
+
+  if (power.type === 'peek' && power.viewed) {
+    const peek = g.state.peekResult || [];
+    return `
+      <div class="power-banner">
+        <h2>// PEEK</h2>
+        <div class="desc">Top 3 mission cards (only you can see this).</div>
+      </div>
+      <div class="cards three">
+        ${peek.map(c => `
+          <div class="card ${c} preview">
+            <div class="corner">${c.toUpperCase()}</div>
+            <div class="body">
+              <div class="symbol">${c === 'clean' ? '◉' : '◈'}</div>
+              <div class="label">${c.toUpperCase()}</div>
+            </div>
+            <div class="corner" style="text-align:right;">${c.toUpperCase()}</div>
+          </div>
+        `).join('')}
+      </div>
+      <button class="primary" onclick="dismissPeekAction()">CONTINUE</button>
+    `;
+  }
+
+  if (power.type === 'investigate') {
+    const targets = g.players.filter(p => p.alive && p.id !== handler.id);
+    return `
+      <div class="power-banner">
+        <h2>// INVESTIGATE</h2>
+        <div class="desc">Pick an operative. ${g.settings.coverIdentity ? 'They may show you a true OR fake dossier.' : 'You will see their team alignment.'}</div>
+      </div>
+      <div class="players">
+        ${targets.map(p => `
+          <div class="player-row selectable ${state.selectedTarget === p.id ? 'selected' : ''}" onclick="selectTarget('${p.id}')">
+            <div class="avatar">${initials(p.name)}</div>
+            <div class="nm">${esc(p.name)}</div>
+          </div>
+        `).join('')}
+      </div>
+      <button class="primary" onclick="confirmPower('investigate')" ${!state.selectedTarget ? 'disabled' : ''}>INVESTIGATE</button>
+    `;
+  }
+
+  if (power.type === 'election') {
+    const targets = g.players.filter(p => p.alive && p.id !== handler.id);
+    return `
+      <div class="power-banner">
+        <h2>// SPECIAL ELECTION</h2>
+        <div class="desc">Choose the next Handler.</div>
+      </div>
+      <div class="players">
+        ${targets.map(p => `
+          <div class="player-row selectable ${state.selectedTarget === p.id ? 'selected' : ''}" onclick="selectTarget('${p.id}')">
+            <div class="avatar">${initials(p.name)}</div>
+            <div class="nm">${esc(p.name)}</div>
+          </div>
+        `).join('')}
+      </div>
+      <button class="primary" onclick="confirmPower('election')" ${!state.selectedTarget ? 'disabled' : ''}>APPOINT</button>
+    `;
+  }
+
+  if (power.type === 'terminate') {
+    const targets = g.players.filter(p => p.alive && p.id !== handler.id);
+    return `
+      <div class="power-banner" style="border-color: var(--red); background: linear-gradient(135deg, rgba(255,56,56,0.12), var(--bg-2));">
+        <h2 style="color: var(--red);">// TERMINATE</h2>
+        <div class="desc">Eliminate an operative permanently. If they are the Mole Chief, the Loyalists win.</div>
+      </div>
+      <div class="players">
+        ${targets.map(p => `
+          <div class="player-row selectable ${state.selectedTarget === p.id ? 'selected' : ''}" onclick="selectTarget('${p.id}')">
+            <div class="avatar">${initials(p.name)}</div>
+            <div class="nm">${esc(p.name)}</div>
+          </div>
+        `).join('')}
+      </div>
+      <button class="danger" onclick="confirmPower('terminate')" ${!state.selectedTarget ? 'disabled' : ''}>EXECUTE TERMINATION</button>
+    `;
+  }
+
+  return `<div class="panel"><p>Unknown power state.</p></div>`;
+}
+
+async function usePeek() {
+  try { await api('action', { ...state.session, action: 'usePower', payload: {} }); }
+  catch (e) { toast(e.message, 'error'); }
+}
+
+async function dismissPeekAction() {
+  try { await api('action', { ...state.session, action: 'dismissPeek' }); }
+  catch (e) { toast(e.message, 'error'); }
+}
+
+async function confirmPower() {
+  if (!state.selectedTarget) return;
+  try {
+    await api('action', { ...state.session, action: 'usePower', payload: { targetId: state.selectedTarget } });
+    state.selectedTarget = null;
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+function renderCoverChoice() {
+  const g = state.game;
+  const power = g.state.pendingPower;
+  const handler = g.players[g.state.handlerIdx];
+  const isTarget = power && power.targetId === state.session.playerId;
+  if (!isTarget) {
+    const target = g.players.find(p => p.id === power.targetId);
+    return `
+      <div class="panel hot">
+        <div class="panel-title">Investigation</div>
+        <p>${esc(handler.name)} is investigating ${esc(target.name)}.</p>
+        <p class="dim tiny" style="margin-top:8px;">Awaiting cover identity decision...</p>
+      </div>
+    `;
+  }
+  const you = g.you;
+  return `
+    <div class="power-banner">
+      <h2>// COVER CHOICE</h2>
+      <div class="desc">${esc(handler.name)} is investigating you. What dossier do you show them?</div>
+      <p class="tiny dim" style="margin-top:8px;">(Your real role: <strong class="${you.role === 'loyalist' ? 'green' : 'red'}">${you.role.toUpperCase()}</strong>)</p>
+    </div>
+    <div class="cover-choice">
+      <div class="cover-card loyalist" onclick="confirmCover('loyalist')">
+        <div class="label">LOYALIST</div>
+        <div class="sub">Show clean dossier</div>
+      </div>
+      <div class="cover-card mole" onclick="confirmCover('mole')">
+        <div class="label">MOLE</div>
+        <div class="sub">Show compromised dossier</div>
+      </div>
+    </div>
+    <p class="tiny dim center" style="margin-top:8px;">Choose carefully — the handler will believe what they see.</p>
+  `;
+}
+
+async function confirmCover(claimedRole) {
+  try {
+    await api('action', { ...state.session, action: 'coverIdentity', payload: { claimedRole } });
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+// =====================================================================
+// LOG
+// =====================================================================
+
+function renderLog() {
+  const g = state.game;
+  const log = (g.log || []).slice(-15).reverse();
+  if (!log.length) return '';
+  return `
+    <div class="log" id="log-area">
+      <div class="log-title">// SIGINT FEED</div>
+      ${log.map(e => `<div class="log-entry">${esc(e.msg)}</div>`).join('')}
+    </div>
+  `;
+}
+
+// =====================================================================
+// GAME OVER
+// =====================================================================
+
+function renderGameOver() {
+  const g = state.game;
+  const winner = g.state.winner;
+  const isHost = g.host === state.session.playerId;
+  return `
+    <div class="gameover-banner ${winner}">
+      <div class="tiny dim">// OPERATION CONCLUDED</div>
+      <h1>${winner === 'loyalists' ? 'LOYALISTS WIN' : 'MOLES WIN'}</h1>
+      <div class="reason">${esc(g.state.gameOverReason || '')}</div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Final Roster — Roles Revealed</div>
+      <div class="players">
+        ${g.players.map(p => `
+          <div class="player-row ${!p.alive ? 'dead' : ''}">
+            <div class="avatar">${initials(p.name)}</div>
+            <div class="nm">
+              ${esc(p.name)}
+              ${p.id === state.session.playerId ? '<span class="badge you">YOU</span>' : ''}
+              ${p.isBot ? '<span class="badge bot">BOT</span>' : ''}
+              ${p.role ? `<span class="badge role-${p.role}">${p.role.toUpperCase()}</span>` : ''}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+    <div class="action-stack">
+      ${isHost ? `<button class="primary" onclick="rematch()">▶ REMATCH (SAME PLAYERS)</button>` : `<div class="phase-banner">Waiting for host to start rematch...</div>`}
+      <button class="subtle" onclick="leaveGame()">EXIT TERMINAL</button>
+    </div>
+  `;
+}
+
+async function rematch() {
+  try {
+    state.rolesShown = false;
+    await api('action', { ...state.session, action: 'rematch' });
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+// =====================================================================
+// CHAT
+// =====================================================================
+
+function renderChat() {
+  const g = state.game;
+  if (!g) return;
+  const container = document.getElementById('chat-messages');
+  if (!container) return;
+  const wasNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 80;
+  const chat = g.chat || [];
+  container.innerHTML = chat.map(m => {
+    const playerObj = g.players.find(p => p.id === m.playerId);
+    const isBot = playerObj && playerObj.isBot;
+    return `
+      <div class="msg ${m.system ? 'system' : ''} ${isBot ? 'bot' : ''}">
+        <div class="mh"><span class="nm">${esc(m.name)}</span> · ${formatTs(m.ts)}</div>
+        <div class="body">${esc(m.text)}</div>
+      </div>
+    `;
+  }).join('');
+  if (wasNearBottom) container.scrollTop = container.scrollHeight;
+}
+
+function toggleChat() {
+  state.chatOpen = !state.chatOpen;
+  const panel = document.getElementById('chat-panel');
+  panel.classList.toggle('open', state.chatOpen);
+  if (state.chatOpen) {
+    state.unreadChat = 0;
+    updateChatBadge();
+    if (state.game) {
+      try { localStorage.setItem(`${STORAGE_KEY}:chatTs:${state.game.code}`, String(Date.now())); } catch (e) {}
+    }
+    setTimeout(() => {
+      const c = document.getElementById('chat-messages');
+      if (c) c.scrollTop = c.scrollHeight;
+    }, 300);
+  }
+}
+
+function updateChatBadge() {
+  const btn = document.getElementById('chat-toggle');
+  if (!btn) return;
+  let badge = btn.querySelector('.badge-count');
+  if (state.unreadChat > 0) {
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.className = 'badge-count';
+      btn.appendChild(badge);
+    }
+    badge.textContent = state.unreadChat > 9 ? '9+' : String(state.unreadChat);
+  } else if (badge) {
+    badge.remove();
+  }
+}
+
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  try {
+    await api('action', { ...state.session, action: 'chat', payload: { text } });
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && document.activeElement?.id === 'chat-input') {
+    sendChat();
+  }
+});
+
+// =====================================================================
+// BOT DRIVER (host-only) — runs whenever state changes
+// =====================================================================
+
+async function driveBots() {
+  if (state.botBusy) return;
+  if (!state.game || state.game.host !== state.session.playerId) return;
+  if (state.game.status !== 'playing') return;
+  const g = state.game;
+  const phase = g.state.phase;
+  state.botBusy = true;
+
+  try {
+    // Determine which bot needs to act
+    if (phase === 'nominate') {
+      const handler = g.players[g.state.handlerIdx];
+      if (handler.isBot && handler.alive) {
+        await botNominate(handler);
+      }
+    } else if (phase === 'vote') {
+      // All bots that haven't voted yet
+      for (const p of g.players) {
+        if (!p.isBot || !p.alive) continue;
+        if (g.votes && g.votes[p.id] && g.votes[p.id] !== 'pending') continue;
+        await botVote(p);
+      }
+    } else if (phase === 'handlerDraw') {
+      const handler = g.players[g.state.handlerIdx];
+      if (handler.isBot && handler.alive) {
+        await botDiscard(handler);
+      }
+    } else if (phase === 'operativePlay') {
+      const op = g.players[g.state.operativeIdx];
+      if (op.isBot && op.alive) {
+        await botEnact(op);
+      }
+    } else if (phase === 'power') {
+      const handler = g.players[g.state.handlerIdx];
+      if (handler.isBot && handler.alive) {
+        await botUsePower(handler);
+      }
+    } else if (phase === 'coverChoice') {
+      const power = g.state.pendingPower;
+      const target = g.players.find(p => p.id === power.targetId);
+      if (target && target.isBot) {
+        await botCover(target);
+      }
+    }
+
+    // AI chat: bots occasionally chat between rounds (if enabled)
+    if (g.settings.aiChat && Date.now() - state.lastBotChatTs > 15000) {
+      // Throttle: at most every 15 sec across bots
+      if (Math.random() < 0.4) {
+        const candidates = g.players.filter(p => p.isBot && p.alive);
+        if (candidates.length) {
+          const speaker = candidates[Math.floor(Math.random() * candidates.length)];
+          state.lastBotChatTs = Date.now();
+          fetch(`${API}/botchat`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ ...state.session, botId: speaker.id })
+          }).catch(() => {});
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('Bot driver error:', e);
+  } finally {
+    state.botBusy = false;
+  }
+}
+
+// We need to know each bot's role and team. The redacted state hides others' roles
+// from the host by default. But the host is a real player — the host might be a Loyalist
+// who shouldn't see bot moles' roles.
+//
+// Solution: Bots use simple heuristics that don't require knowing all roles.
+//   - If bot KNOWS its own role (it does, via its own redacted view, but the host doesn't know it),
+//     we need to fetch the bot's own state view.
+// For simplicity: fetch each bot's redacted view on-demand using the bot's own playerId+token.
+// The host stored bot tokens in localStorage when adding them? No — tokens come from server only.
+// Actually, the server returns full game state to actions — it includes all players with their tokens
+// only on create/join. We don't have bot tokens client-side.
+//
+// PRAGMATIC FIX: Server-side action endpoint accepts {onBehalfOf: botId} from host.
+// This is already built into action.js. The bot doesn't need to "know" its own role for
+// most decisions — we use suspicion heuristics based on PUBLIC info.
+// For role-aware decisions (e.g., mole biases discard toward compromised), the bot
+// must know its role. We solve this by having the host's first action (after game start)
+// fetch each bot's state view using a special endpoint... or we add a "botView" call.
+//
+// SIMPLER: The host's redacted view already includes role info for bots IF the host is a mole.
+// If host is loyalist, host doesn't see bot roles. So bot intelligence is asymmetric.
+// Acceptable trade-off: bots play correctly only when host is on the moles' side OR we use
+// public-info heuristics. We'll do public-info heuristics + simple coin-flip biases.
+
+async function botNominate(bot) {
+  const g = state.game;
+  const eligible = g.players.filter((p, i) => {
+    if (i === g.state.handlerIdx) return false;
+    if (!p.alive) return false;
+    if (g.state.lastOperative === i) return false;
+    const aliveCount = g.players.filter(x => x.alive).length;
+    if (aliveCount > 5 && g.state.lastHandler === i) return false;
+    return true;
+  });
+  if (!eligible.length) return;
+  // Bots prefer their own kind if we can see roles; otherwise random
+  const target = eligible[Math.floor(Math.random() * eligible.length)];
+  await sleep(900 + Math.random() * 800);
+  await api('action', { ...state.session, action: 'nominate', payload: { onBehalfOf: bot.id, targetId: target.id } });
+}
+
+async function botVote(bot) {
+  // Simple heuristic: 65% approve, 35% reject; if 2+ compromised already, more skeptical
+  const g = state.game;
+  let approveProb = 0.65;
+  if (g.state.missionTrack.compromised >= 2) approveProb = 0.5;
+  if (g.state.missionTrack.compromised >= 3) approveProb = 0.4;
+  if (g.state.rejectionCount >= 2) approveProb = 0.7; // avoid chaos
+  const vote = Math.random() < approveProb ? 'approve' : 'reject';
+  await sleep(400 + Math.random() * 1000);
+  try {
+    await api('action', { ...state.session, action: 'vote', payload: { onBehalfOf: bot.id, value: vote } });
+  } catch (e) { /* maybe phase already changed */ }
+}
+
+async function botDiscard(bot) {
+  const g = state.game;
+  // Without knowing bot's role, use a balanced heuristic: discard one card at random
+  // The actual cards are in currentDraw, but only the holder sees them; the host can see if
+  // host == handler (which is the bot). Since the request is on-behalf-of, the host's view doesn't
+  // include the cards. We'll just pick index 0/1/2 randomly.
+  const idx = Math.floor(Math.random() * 3);
+  await sleep(1200 + Math.random() * 800);
+  await api('action', { ...state.session, action: 'handlerDiscard', payload: { onBehalfOf: bot.id, cardIdx: idx } });
+}
+
+async function botEnact(bot) {
+  const idx = Math.floor(Math.random() * 2);
+  await sleep(1000 + Math.random() * 800);
+  await api('action', { ...state.session, action: 'operativeEnact', payload: { onBehalfOf: bot.id, cardIdx: idx } });
+}
+
+async function botUsePower(bot) {
+  const g = state.game;
+  const power = g.state.pendingPower;
+  await sleep(1200 + Math.random() * 800);
+  if (power.type === 'peek') {
+    if (!power.viewed) {
+      await api('action', { ...state.session, action: 'usePower', payload: { onBehalfOf: bot.id } });
+      // The dismissPeek will be triggered on next driveBots tick
+    } else {
+      await api('action', { ...state.session, action: 'dismissPeek', payload: { onBehalfOf: bot.id } });
+    }
+    return;
+  }
+  // Targeted powers: pick random alive non-self
+  const targets = g.players.filter(p => p.alive && p.id !== bot.id);
+  if (!targets.length) return;
+  const target = targets[Math.floor(Math.random() * targets.length)];
+  await api('action', { ...state.session, action: 'usePower', payload: { onBehalfOf: bot.id, targetId: target.id } });
+}
+
+async function botCover(bot) {
+  // 50/50 lie or truth
+  const claim = Math.random() < 0.5 ? 'loyalist' : 'mole';
+  await sleep(1500 + Math.random() * 1200);
+  await api('action', { ...state.session, action: 'coverIdentity', payload: { onBehalfOf: bot.id, claimedRole: claim } });
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// =====================================================================
+// HELPERS
+// =====================================================================
+
+function esc(str) {
+  if (str == null) return '';
+  return String(str).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]
+  );
+}
+
+function initials(name) {
+  if (!name) return '?';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return name.substring(0, 2).toUpperCase();
+}
+
+function formatTs(ts) {
+  const d = new Date(ts);
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+// =====================================================================
+// BOOT
+// =====================================================================
+
+(function boot() {
+  const saved = loadSession();
+  if (saved && saved.code) {
+    state.session = saved;
+    startPolling();
+  }
+  // Auto-fill code from URL ?code=XXXX
+  const urlParams = new URLSearchParams(location.search);
+  const codeParam = urlParams.get('code');
+  if (codeParam && !saved) {
+    setTimeout(() => {
+      const codeInput = document.getElementById('code-input');
+      if (codeInput) {
+        codeInput.value = codeParam.toUpperCase();
+        document.getElementById('join-form')?.classList.remove('hidden');
+      }
+    }, 100);
+  }
+  render();
+})();
+</script>
+</body>
+</html>
