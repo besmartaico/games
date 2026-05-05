@@ -1,21 +1,34 @@
 // Shared game logic for The Baddies
 // This module is used by all API endpoints. Pure functions where possible.
 
-import { kv } from '@vercel/kv';
+import { createClient } from 'redis';
 import crypto from 'crypto';
+
+// Lazy singleton Redis client (Vercel reuses lambda containers between calls)
+let _redis = null;
+async function getRedis() {
+  if (_redis && _redis.isOpen) return _redis;
+  _redis = createClient({ url: process.env.REDIS_URL });
+  _redis.on('error', (err) => console.error('Redis error:', err));
+  await _redis.connect();
+  return _redis;
+}
 
 // ============ KV helpers ============
 
 export const gameKey = (code) => `baddies:game:${code}`;
 
 export async function getGame(code) {
-  return await kv.get(gameKey(code));
+  const redis = await getRedis();
+  const raw = await redis.get(gameKey(code));
+  return raw ? JSON.parse(raw) : null;
 }
 
 export async function saveGame(game) {
   game.updatedAt = Date.now();
+  const redis = await getRedis();
   // 24-hour TTL — abandoned games auto-expire
-  await kv.set(gameKey(game.code), game, { ex: 86400 });
+  await redis.set(gameKey(game.code), JSON.stringify(game), { EX: 86400 });
 }
 
 // ============ ID generation ============
