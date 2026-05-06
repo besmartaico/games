@@ -1360,7 +1360,8 @@ function renderSignature() {
     g.state ? g.state.rejectionCount : '',
     draw, handCards, power, peek,
     state.rolesShown ? '1' : '0',
-    state.selectedCard || '', state.selectedTarget || ''
+    state.selectedCard || '', state.selectedTarget || '',
+    g.state && g.state.lastVoteSnapshot ? (g.state.lastVoteSnapshot.approve + '/' + g.state.lastVoteSnapshot.reject + '/' + g.state.lastVoteSnapshot.handlerName) : ''
   ].join('#');
 }
 
@@ -1743,10 +1744,64 @@ function renderRoleReveal() {
       <div class="role-desc">${desc}</div>
       ${teammatesHtml}
     </div>
+    ${renderPowerSchedule()}
     <button class="primary" onclick="acknowledgeRole()" style="font-size:15px; min-height:54px;">
       MEMORIZE & PROCEED
     </button>
     <p class="tiny dim center" style="margin-top:12px;">This dossier will not be shown again.</p>
+  `;
+}
+
+function renderPowerSchedule() {
+  const g = state.game;
+  const n = g.players.length;
+  const POWER_TABLE = {
+    5:  { 3: 'investigate', 4: 'election', 5: 'terminate' },
+    6:  { 3: 'investigate', 4: 'election', 5: 'terminate' },
+    7:  { 2: 'investigate', 3: 'election', 4: 'terminate', 5: 'terminate' },
+    8:  { 2: 'investigate', 3: 'election', 4: 'terminate', 5: 'terminate' },
+    9:  { 1: 'investigate', 2: 'investigate', 3: 'election', 4: 'terminate', 5: 'terminate' },
+    10: { 1: 'investigate', 2: 'investigate', 3: 'election', 4: 'terminate', 5: 'terminate' }
+  };
+  const PEEK_AT = (n === 5 || n === 6) ? 2 : null;
+  const POWER_DESC = {
+    investigate: "Handler secretly examines another player's loyalty card (could be a fake — Cover Identity).",
+    election: "Handler picks the next Handler — bypasses normal rotation.",
+    terminate: "Handler eliminates another player. Game ends instantly if the Mole Chief is killed."
+  };
+  const powers = POWER_TABLE[n] || {};
+  const rows = [];
+  for (let c = 1; c <= 6; c++) {
+    let kind = null;
+    if (PEEK_AT === c) kind = 'peek';
+    else if (powers[c]) kind = powers[c];
+    if (!kind) continue;
+    let label, desc;
+    if (kind === 'peek') {
+      label = 'PEEK DECK';
+      desc = 'Handler privately views the top 3 mission cards.';
+    } else {
+      label = kind.toUpperCase();
+      desc = POWER_DESC[kind];
+    }
+    rows.push(`
+      <div style="display:flex; gap:10px; padding:6px 0; border-bottom:1px dashed var(--border); font-size:11px;">
+        <div style="flex-shrink:0; width:62px; color:var(--red); font-weight:700; letter-spacing:0.1em;">⚠ ${c} COMP.</div>
+        <div style="flex:1;">
+          <div style="color:var(--amber); font-weight:700; letter-spacing:0.15em; margin-bottom:2px;">${label}</div>
+          <div style="color:var(--text-dim); line-height:1.4;">${desc}</div>
+        </div>
+      </div>
+    `);
+  }
+  if (!rows.length) return '';
+  return `
+    <div class="panel" style="margin-top:14px;">
+      <div class="panel-title">Director Powers (${n} Players)</div>
+      <p style="font-size:10px; color:var(--text-faint); letter-spacing:0.05em; margin-bottom:8px;">Each Compromised mission triggers a power for the current Handler:</p>
+      ${rows.join('')}
+      <p style="font-size:10px; color:var(--text-faint); margin-top:10px; line-height:1.5;">3 failed votes in a row trigger CHAOS — top mission card auto-deploys.</p>
+    </div>
   `;
 }
 
@@ -1792,12 +1847,17 @@ function renderGame() {
     phaseArea = renderCoverChoice();
   }
 
+  // Persistent vote summary — shows during handlerDraw / operativePlay / power so everyone
+  // can see how each player voted on the current mission team
+  const voteSummaryHtml = renderLastVoteSummary();
+
   // Log
   const logHtml = renderLog();
 
   return `
     <div class="phase-banner ${phaseClass(phase)}">${phaseLabel(phase, isHandler, isOperative, handler, operative)}</div>
     ${tracksHtml}
+    ${voteSummaryHtml}
     ${phaseArea}
     <div class="panel">
       <div class="panel-title">Operatives</div>
@@ -2005,6 +2065,36 @@ async function castVote(value) {
 function renderVoteResult() {
   // Server transitions out of this fast — just show a brief loader
   return `<div class="phase-banner">Tallying votes<span class="cursor-blink"></span></div>`;
+}
+
+function renderLastVoteSummary() {
+  const g = state.game;
+  if (!g.state || !g.state.lastVoteSnapshot) return '';
+  const phase = g.state.phase;
+  if (phase !== 'handlerDraw' && phase !== 'operativePlay' && phase !== 'power' && phase !== 'coverChoice') return '';
+  const snap = g.state.lastVoteSnapshot;
+  const approveNames = [];
+  const rejectNames = [];
+  for (const p of g.players) {
+    const v = snap.votes[p.id];
+    if (v === 'approve') approveNames.push(esc(p.name));
+    else if (v === 'reject') rejectNames.push(esc(p.name));
+  }
+  return `
+    <div class="panel" style="border-color: var(--border);">
+      <div class="panel-title">Vote Tally — ${esc(snap.handlerName)} + ${esc(snap.operativeName)} <span style="color:${snap.passed ? 'var(--green)' : 'var(--red)'}; margin-left:8px;">${snap.passed ? 'PASSED' : 'FAILED'} ${snap.approve}–${snap.reject}</span></div>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; font-size:11px;">
+        <div>
+          <div style="color:var(--green); font-weight:700; margin-bottom:4px; letter-spacing:0.1em;">✓ APPROVED (${approveNames.length})</div>
+          <div style="color:var(--text); line-height:1.7;">${approveNames.length ? approveNames.join('<br>') : '<span class="faint">—</span>'}</div>
+        </div>
+        <div>
+          <div style="color:var(--red); font-weight:700; margin-bottom:4px; letter-spacing:0.1em;">✗ REJECTED (${rejectNames.length})</div>
+          <div style="color:var(--text); line-height:1.7;">${rejectNames.length ? rejectNames.join('<br>') : '<span class="faint">—</span>'}</div>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 function renderHandlerDraw(isHandler) {
