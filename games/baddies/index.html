@@ -1943,6 +1943,13 @@ function renderGame() {
     }
   }
 
+  // Always-visible host fallback button: small, dashed, at bottom of screen — guaranteed escape hatch
+  const hasAnyBot = g.players.some(p => p.isBot);
+  const hostFallbackHtml = (isHost && hasAnyBot && g.status === 'playing') ? `
+    <div style="margin-top:14px; text-align:center;">
+      <button onclick="forceBotTurn()" style="font-size:11px; color:var(--text-faint); border:1px dashed var(--border); background:transparent; min-height:32px;">⚡ FORCE BOT TURN (if stuck)</button>
+    </div>
+  ` : '';
   return `
     <div class="phase-banner ${phaseClass(phase)}">${phaseLabel(phase, isHandler, isOperative, handler, operative)}</div>
     ${tracksHtml}
@@ -1954,6 +1961,7 @@ function renderGame() {
       ${playersHtml}
     </div>
     ${logHtml}
+    ${hostFallbackHtml}
   `;
 }
 
