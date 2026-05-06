@@ -1284,7 +1284,19 @@ async function pollOnce() {
     const since = state.game?.updatedAt || 0;
     const data = await api('state', { ...state.session, since }, 'GET');
     state.fetchErrCount = 0;
-    if (data.unchanged) return;
+    if (data.unchanged) {
+      // Even when state hasn't changed, give the bot driver a chance to retry.
+      // Without this, a single failed bot action would leave the game stuck forever
+      // because no future state change would re-trigger driveBots.
+      if (state.game && state.game.host === state.session.playerId && state.game.status === 'playing') {
+        const phase = state.game.state && state.game.state.phase;
+        const phaseNeedsAct = ['nominate','vote','handlerDraw','operativePlay','power','coverChoice'].includes(phase);
+        if (phaseNeedsAct && !state.botBusy) {
+          driveBots();
+        }
+      }
+      return;
+    }
     state.game = data;
     onStateUpdate();
   } catch (e) {
@@ -1361,7 +1373,9 @@ function renderSignature() {
     draw, handCards, power, peek,
     state.rolesShown ? '1' : '0',
     state.selectedCard || '', state.selectedTarget || '',
-    g.state && g.state.lastVoteSnapshot ? (g.state.lastVoteSnapshot.approve + '/' + g.state.lastVoteSnapshot.reject + '/' + g.state.lastVoteSnapshot.handlerName) : ''
+    g.state && g.state.lastVoteSnapshot ? (g.state.lastVoteSnapshot.approve + '/' + g.state.lastVoteSnapshot.reject + '/' + g.state.lastVoteSnapshot.handlerName) : '',
+    // Track which players are bots that are currently expected to act, so the host-control panel updates correctly
+    g.players.map(p => p.isBot ? '1' : '0').join('')
   ].join('#');
 }
 
@@ -1642,6 +1656,14 @@ function copyJoinLink() {
   }
 }
 
+function forceBotTurn() {
+  // Reset the busy flag and immediately try driving bots again
+  state.botBusy = false;
+  state.botBusyAt = null;
+  toast('Forcing bot turn...', 'success');
+  driveBots();
+}
+
 async function addBot() {
   try { await api('action', { ...state.session, action: 'addBot' }); } catch (e) { toast(e.message, 'error'); }
 }
@@ -1854,10 +1876,38 @@ function renderGame() {
   // Log
   const logHtml = renderLog();
 
+  // Host control: show a "Force Bot Turn" button when we're waiting on a bot
+  const isHost = g.host === state.session.playerId;
+  let hostControlHtml = '';
+  if (isHost) {
+    let waitingOnBot = null;
+    if (phase === 'nominate' && handler.isBot) waitingOnBot = handler;
+    else if (phase === 'handlerDraw' && handler.isBot) waitingOnBot = handler;
+    else if (phase === 'power' && handler.isBot) waitingOnBot = handler;
+    else if (phase === 'operativePlay' && operative && operative.isBot) waitingOnBot = operative;
+    else if (phase === 'vote') {
+      // any bot still pending vote
+      const pendingBots = g.players.filter(p => p.isBot && p.alive && (!g.votes || !g.votes[p.id] || g.votes[p.id] === 'pending'));
+      if (pendingBots.length) waitingOnBot = pendingBots[0];
+    }
+    if (waitingOnBot) {
+      hostControlHtml = `
+        <div class="panel" style="border-color: var(--amber); background: rgba(255, 184, 74, 0.05);">
+          <div class="panel-title" style="color:var(--amber);">⚙ Host Controls</div>
+          <p style="font-size:12px; color:var(--text-dim); margin-bottom:10px; line-height:1.5;">
+            Waiting on bot <span style="color:var(--amber); font-weight:700;">${esc(waitingOnBot.name)}</span> for <span style="color:var(--text);">${phase}</span>. Bots normally act within a few seconds. If stuck, force the turn.
+          </p>
+          <button onclick="forceBotTurn()" style="border-color:var(--amber); color:var(--amber);">⚡ FORCE BOT TURN</button>
+        </div>
+      `;
+    }
+  }
+
   return `
     <div class="phase-banner ${phaseClass(phase)}">${phaseLabel(phase, isHandler, isOperative, handler, operative)}</div>
     ${tracksHtml}
     ${voteSummaryHtml}
+    ${hostControlHtml}
     ${phaseArea}
     <div class="panel">
       <div class="panel-title">Operatives</div>
@@ -2476,12 +2526,18 @@ document.addEventListener('keydown', (e) => {
 // =====================================================================
 
 async function driveBots() {
+  // Watchdog: if botBusy has been set for more than 8 seconds, something hung — clear it.
+  if (state.botBusy && state.botBusyAt && (Date.now() - state.botBusyAt) > 8000) {
+    console.warn('Bot driver watchdog: clearing stuck botBusy flag');
+    state.botBusy = false;
+  }
   if (state.botBusy) return;
   if (!state.game || state.game.host !== state.session.playerId) return;
   if (state.game.status !== 'playing') return;
   const g = state.game;
   const phase = g.state.phase;
   state.botBusy = true;
+  state.botBusyAt = Date.now();
 
   try {
     // Determine which bot needs to act
@@ -2538,8 +2594,13 @@ async function driveBots() {
     }
   } catch (e) {
     console.warn('Bot driver error:', e);
+    // Surface to the host so they know something failed (helps debug stuck states)
+    if (state.game && phase) {
+      toast(`Bot stuck on ${phase}: ${e.message || e}`, 'error');
+    }
   } finally {
     state.botBusy = false;
+    state.botBusyAt = null;
   }
 }
 
