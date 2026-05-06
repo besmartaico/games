@@ -352,6 +352,21 @@ function resolveVote(game) {
   const reject = alives.length - approve;
   game.state.phase = 'voteResult';
 
+  // Log a public roll-call so everyone sees how each player voted
+  const approvers = alives.filter(p => game.votes[p.id] === 'approve').map(p => p.name).join(', ');
+  const rejectors = alives.filter(p => game.votes[p.id] === 'reject').map(p => p.name).join(', ');
+  if (approvers) pushLog(game, `✓ APPROVED by: ${approvers}`);
+  if (rejectors) pushLog(game, `✗ REJECTED by: ${rejectors}`);
+
+  // Snapshot the vote on the game state so the UI can display it during the next phase
+  game.state.lastVoteSnapshot = {
+    handlerName: game.players[game.state.handlerIdx].name,
+    operativeName: game.players[game.state.operativeIdx].name,
+    approve, reject,
+    passed: approve > reject,
+    votes: { ...game.votes }
+  };
+
   if (approve > reject) {
     pushLog(game, `Vote PASSED (${approve}–${reject}). Mission proceeds.`);
     // Special: if 3+ compromised already AND chief is operative → moles win
