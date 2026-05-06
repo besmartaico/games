@@ -1656,12 +1656,34 @@ function copyJoinLink() {
   }
 }
 
-function forceBotTurn() {
+async function forceBotTurn() {
   // Reset the busy flag and immediately try driving bots again
+  // Retry up to 3 times with delay since polling races can intermittently 400 the action
   state.botBusy = false;
   state.botBusyAt = null;
   toast('Forcing bot turn...', 'success');
-  driveBots();
+  await driveBots();
+  // If still stuck after first attempt, retry a couple more times
+  for (let i = 0; i < 2; i++) {
+    if (!state.game) break;
+    const phase = state.game.state && state.game.state.phase;
+    const handler = state.game.players[state.game.state.handlerIdx];
+    const operative = state.game.state.operativeIdx !== null ? state.game.players[state.game.state.operativeIdx] : null;
+    let stillStuck = false;
+    if (phase === 'nominate' && handler && handler.isBot) stillStuck = true;
+    else if (phase === 'handlerDraw' && handler && handler.isBot) stillStuck = true;
+    else if (phase === 'operativePlay' && operative && operative.isBot) stillStuck = true;
+    else if (phase === 'power' && handler && handler.isBot) stillStuck = true;
+    else if (phase === 'vote') {
+      const pendingBots = state.game.players.filter(p => p.isBot && p.alive && (!state.game.votes || !state.game.votes[p.id] || state.game.votes[p.id] === 'pending'));
+      if (pendingBots.length) stillStuck = true;
+    }
+    if (!stillStuck) break;
+    await new Promise(r => setTimeout(r, 800));
+    state.botBusy = false;
+    state.botBusyAt = null;
+    await driveBots();
+  }
 }
 
 async function addBot() {
@@ -1876,28 +1898,46 @@ function renderGame() {
   // Log
   const logHtml = renderLog();
 
-  // Host control: show a "Force Bot Turn" button when we're waiting on a bot
+  // Host control: show a phase-specific "Force Bot" button when we're waiting on a bot
   const isHost = g.host === state.session.playerId;
   let hostControlHtml = '';
   if (isHost) {
     let waitingOnBot = null;
-    if (phase === 'nominate' && handler.isBot) waitingOnBot = handler;
-    else if (phase === 'handlerDraw' && handler.isBot) waitingOnBot = handler;
-    else if (phase === 'power' && handler.isBot) waitingOnBot = handler;
-    else if (phase === 'operativePlay' && operative && operative.isBot) waitingOnBot = operative;
-    else if (phase === 'vote') {
-      // any bot still pending vote
+    let actionLabel = null;
+    if (phase === 'nominate' && handler.isBot) {
+      waitingOnBot = handler;
+      actionLabel = 'NOMINATE OPERATIVE';
+    } else if (phase === 'handlerDraw' && handler.isBot) {
+      waitingOnBot = handler;
+      actionLabel = 'DISCARD A CARD';
+    } else if (phase === 'operativePlay' && operative && operative.isBot) {
+      waitingOnBot = operative;
+      actionLabel = 'EXECUTE THE MISSION';
+    } else if (phase === 'power' && handler.isBot) {
+      waitingOnBot = handler;
+      actionLabel = 'USE DIRECTOR POWER';
+    } else if (phase === 'coverChoice') {
+      const pp = g.state.pendingPower;
+      const target = pp ? g.players.find(p => p.id === pp.targetId) : null;
+      if (target && target.isBot) {
+        waitingOnBot = target;
+        actionLabel = 'CHOOSE COVER IDENTITY';
+      }
+    } else if (phase === 'vote') {
       const pendingBots = g.players.filter(p => p.isBot && p.alive && (!g.votes || !g.votes[p.id] || g.votes[p.id] === 'pending'));
-      if (pendingBots.length) waitingOnBot = pendingBots[0];
+      if (pendingBots.length) {
+        waitingOnBot = pendingBots[0];
+        actionLabel = pendingBots.length === 1 ? 'CAST VOTE' : `CAST ${pendingBots.length} BOT VOTES`;
+      }
     }
-    if (waitingOnBot) {
+    if (waitingOnBot && actionLabel) {
       hostControlHtml = `
-        <div class="panel" style="border-color: var(--amber); background: rgba(255, 184, 74, 0.05);">
-          <div class="panel-title" style="color:var(--amber);">⚙ Host Controls</div>
-          <p style="font-size:12px; color:var(--text-dim); margin-bottom:10px; line-height:1.5;">
-            Waiting on bot <span style="color:var(--amber); font-weight:700;">${esc(waitingOnBot.name)}</span> for <span style="color:var(--text);">${phase}</span>. Bots normally act within a few seconds. If stuck, force the turn.
+        <div class="panel" style="border-color: var(--amber); background: rgba(255, 184, 74, 0.06); box-shadow: 0 0 0 1px var(--amber-glow);">
+          <div class="panel-title" style="color:var(--amber);">⚙ Host Override</div>
+          <p style="font-size:12px; color:var(--text-dim); margin-bottom:12px; line-height:1.5;">
+            Waiting on bot <span style="color:var(--amber); font-weight:700;">${esc(waitingOnBot.name)}</span>. If they're not acting, push them along:
           </p>
-          <button onclick="forceBotTurn()" style="border-color:var(--amber); color:var(--amber);">⚡ FORCE BOT TURN</button>
+          <button onclick="forceBotTurn()" class="primary" style="background:var(--amber); border-color:var(--amber); color:var(--bg); font-size:14px; min-height:52px;">⚡ FORCE ${esc(waitingOnBot.name).toUpperCase()} TO ${actionLabel}</button>
         </div>
       `;
     }
