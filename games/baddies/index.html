@@ -1961,16 +1961,33 @@ function renderVote() {
   const myVote = g.votes && g.votes[state.session.playerId];
   const myVoteIsActive = myVote && myVote !== 'pending';
   const you = g.you;
-  if (!you.alive) return `<div class="phase-banner">You are eliminated and cannot vote.</div>`;
+  const isMeHandler = handler.id === state.session.playerId;
+  const isMeOperative = operative.id === state.session.playerId;
+  const totalVoters = g.players.filter(p => p.alive).length;
+  const cast = g.votes ? Object.values(g.votes).filter(v => v && v !== 'pending').length : 0;
+  if (!you.alive) return `<div class="panel"><div class="panel-title">Vote in progress</div><p style="color:var(--text-dim);font-size:12px;">${esc(handler.name)} has nominated ${esc(operative.name)} to run the next mission. You are eliminated and cannot vote.</p></div>`;
+
   return `
     <div class="panel hot">
-      <div class="panel-title">Voting</div>
-      <div class="kv"><span class="k">Handler</span><span class="v">${esc(handler.name)}</span></div>
-      <div class="kv"><span class="k">Operative</span><span class="v">${esc(operative.name)}</span></div>
+      <div class="panel-title">Mission Team Proposed</div>
+      <div style="text-align:center; padding:14px 4px 10px; border-bottom:1px dashed var(--border); margin-bottom:12px;">
+        <div style="font-size:11px; letter-spacing:0.2em; color:var(--text-dim); text-transform:uppercase; margin-bottom:8px;">${isMeHandler ? 'YOU' : esc(handler.name)} ${isMeHandler ? 'have' : 'has'} nominated</div>
+        <div style="font-size:22px; font-family:var(--display); color:var(--green); margin-bottom:6px;">${isMeOperative ? 'YOU' : esc(operative.name).toUpperCase()}</div>
+        <div style="font-size:11px; letter-spacing:0.15em; color:var(--text-dim); text-transform:uppercase;">to execute the next mission</div>
+      </div>
+
+      <div style="font-size:12px; line-height:1.6; color:var(--text); margin-bottom:14px;">
+        <div style="margin-bottom:8px;"><span class="green" style="font-weight:700;">✓ APPROVE</span> <span style="color:var(--text-dim);">— this team runs the mission. ${esc(handler.name)} draws 3 mission cards, discards 1, then ${esc(operative.name)} plays one of the remaining 2 (Clean or Compromised).</span></div>
+        <div><span class="red" style="font-weight:700;">✗ REJECT</span> <span style="color:var(--text-dim);">— nomination fails, Handler role passes to the next player. <span class="amber">3 rejections in a row triggers chaos</span> (top mission card auto-enacts).</span></div>
+      </div>
+
+      ${g.state.rejectionCount > 0 ? `<div class="phase-banner warn" style="margin-bottom:12px;">⚠ FAILED VOTES: ${g.state.rejectionCount} / 3 — chaos triggers at 3</div>` : ''}
+
       ${myVoteIsActive ? `
-        <div class="phase-banner" style="margin-top:12px;">Your vote: <strong>${myVote.toUpperCase()}</strong> — awaiting others...</div>
+        <div class="phase-banner ${myVote === 'approve' ? '' : 'warn'}" style="margin-top:4px;">Your vote: <strong>${myVote === 'approve' ? '✓ APPROVE' : '✗ REJECT'}</strong> — Awaiting others (${cast}/${totalVoters})...</div>
       ` : `
-        <div class="btn-row two" style="margin-top:14px;">
+        <div style="font-size:12px; color:var(--text-dim); text-align:center; margin-bottom:8px;">Cast your vote: <span class="green">${cast}</span>/${totalVoters} voted</div>
+        <div class="btn-row two">
           <button class="primary" onclick="castVote('approve')">✓ APPROVE</button>
           <button class="danger" onclick="castVote('reject')">✗ REJECT</button>
         </div>
