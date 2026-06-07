@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#0a0a14">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <title>FAMILY FEUD // BeSmartAI Games</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+  <style>
+    :root {
+      --bg: #0a0a14;
+      --bg-2: #15152a;
+      --bg-3: #1f1f3d;
+      --panel: #181830;
+      --border: #2a2a55;
+      --gold: #f5c842;
+      --gold-glow: rgba(245, 200, 66, 0.4);
+      --red: #e63946;
+      --green: #2ecc71;
+      --text: #f0f0ff;
+      --text-dim: #a0a0c0;
+      --text-faint: #6060a0;
+      --team-a: #4287f5;
+      --team-b: #f54287;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { background: var(--bg); }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 16px;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    h1 { font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: var(--gold); text-shadow: 0 0 16px var(--gold-glow); }
+    h2 { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--gold); margin-bottom: 12px; letter-spacing: 0.04em; }
+    button {
+      background: var(--bg-3);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 18px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+      min-height: 44px;
+    }
+    button:hover:not(:disabled) { background: var(--border); }
+    button:active:not(:disabled) { transform: scale(0.98); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    button.primary {
+      background: var(--gold);
+      color: var(--bg);
+      border-color: var(--gold);
+      font-family: 'Bebas Neue', sans-serif;
+      letter-spacing: 0.06em;
+      font-size: 18px;
+    }
+    button.primary:hover:not(:disabled) { background: #ffd95c; box-shadow: 0 0 20px var(--gold-glow); }
+    button.small { padding: 8px 12px; font-size: 13px; min-height: 36px; }
+    input[type="text"] {
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      font-size: 17px;
+      width: 100%;
+      font-family: inherit;
+      outline: none;
+    }
+    input[type="text"]:focus { border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold-glow); }
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+    .center { text-align: center; }
+    .stack { display: flex; flex-direction: column; gap: 10px; }
+    .row { display: flex; gap: 8px; }
+    .small { font-size: 12px; color: var(--text-dim); }
+    .hidden { display: none !important; }
+
+    .welcome { padding: 24px 0; }
+    .logo { text-align: center; margin-bottom: 28px; }
+    .logo h1 { font-size: 56px; }
+    .logo .subtitle { color: var(--text-dim); margin-top: 6px; font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; }
+
+    .lobby-code { text-align: center; padding: 12px 0; }
+    .lobby-code .code { font-family: 'Bebas Neue', sans-serif; font-size: 56px; color: var(--gold); letter-spacing: 0.14em; text-shadow: 0 0 24px var(--gold-glow); line-height: 1; }
+    .lobby-code .label { color: var(--text-dim); font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase; margin-top: 4px; }
+    .qr-wrap { background: white; padding: 12px; border-radius: 12px; display: inline-block; margin-top: 14px; }
+    .qr-wrap svg { display: block; width: 160px; height: 160px; }
+
+    .teams { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .team-card { padding: 12px; border-radius: 10px; }
+    .team-card.team-a { background: rgba(66, 135, 245, 0.1); border: 1px solid var(--team-a); }
+    .team-card.team-b { background: rgba(245, 66, 135, 0.1); border: 1px solid var(--team-b); }
+    .team-name { font-family: 'Bebas Neue', sans-serif; font-size: 17px; letter-spacing: 0.04em; margin-bottom: 6px; }
+    .team-card.team-a .team-name { color: var(--team-a); }
+    .team-card.team-b .team-name { color: var(--team-b); }
+    .player-row { padding: 5px 8px; background: rgba(255,255,255,0.04); border-radius: 6px; font-size: 13px; margin-top: 4px; }
+    .player-row.you { background: rgba(245, 200, 66, 0.15); }
+
+    .scoreboard { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+    .score-card { padding: 8px 12px; border-radius: 8px; text-align: center; transition: box-shadow 0.2s; }
+    .score-card.team-a { background: rgba(66, 135, 245, 0.15); border: 1px solid var(--team-a); }
+    .score-card.team-b { background: rgba(245, 66, 135, 0.15); border: 1px solid var(--team-b); }
+    .score-card.active.team-a { box-shadow: 0 0 14px rgba(66, 135, 245, 0.6); }
+    .score-card.active.team-b { box-shadow: 0 0 14px rgba(245, 66, 135, 0.6); }
+    .score-name { font-family: 'Bebas Neue', sans-serif; font-size: 15px; letter-spacing: 0.04em; }
+    .team-a .score-name { color: var(--team-a); }
+    .team-b .score-name { color: var(--team-b); }
+    .score-value { font-family: 'Bebas Neue', sans-serif; font-size: 30px; color: var(--gold); }
+
+    .question {
+      text-align: center; padding: 18px 16px;
+      background: linear-gradient(180deg, var(--bg-3) 0%, var(--bg-2) 100%);
+      border: 2px solid var(--gold);
+      border-radius: 12px;
+      box-shadow: 0 0 24px rgba(245, 200, 66, 0.2);
+      margin-bottom: 14px;
+    }
+    .question .round-label { color: var(--text-dim); font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase; margin-bottom: 6px; }
+    .question .q-text { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--gold); line-height: 1.2; }
+    .question .multiplier { display: inline-block; background: var(--gold); color: var(--bg); padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 800; margin-left: 6px; vertical-align: middle; }
+
+    .board { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+    .answer-slot {
+      display: flex; align-items: center; padding: 12px 14px;
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 8px; min-height: 48px;
+    }
+    .answer-slot.revealed {
+      background: linear-gradient(90deg, var(--bg-3) 0%, var(--panel) 100%);
+      border-color: var(--gold);
+    }
+    .answer-slot .rank { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--gold); width: 26px; text-align: center; }
+    .answer-slot .ans-text { flex: 1; padding: 0 12px; font-weight: 700; font-size: 15px; }
+    .answer-slot.hidden-ans .ans-text { color: var(--text-faint); letter-spacing: 0.4em; font-weight: 400; }
+    .answer-slot .pts { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--gold); min-width: 36px; text-align: right; }
+
+    .strikes { display: flex; justify-content: center; gap: 18px; margin: 10px 0; }
+    .strike {
+      font-family: 'Bebas Neue', sans-serif; font-size: 44px; line-height: 1;
+      color: var(--text-faint); transition: all 0.2s;
+    }
+    .strike.active { color: var(--red); text-shadow: 0 0 18px var(--red); }
+
+    .phase-banner {
+      text-align: center; padding: 10px; border-radius: 8px;
+      font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 0.04em;
+      margin-bottom: 12px;
+    }
+    .phase-banner.faceoff { background: rgba(245, 200, 66, 0.12); color: var(--gold); border: 1px solid var(--gold); }
+    .phase-banner.control { background: rgba(46, 204, 113, 0.12); color: var(--green); border: 1px solid var(--green); }
+    .phase-banner.steal { background: rgba(230, 57, 70, 0.15); color: var(--red); border: 1px solid var(--red); }
+    .phase-banner.reveal { background: rgba(160, 160, 192, 0.1); color: var(--text-dim); border: 1px solid var(--border); }
+
+    .guess-input { display: flex; gap: 8px; margin-top: 10px; }
+    .guess-input input { flex: 1; }
+
+    .last-result {
+      text-align: center; padding: 10px; border-radius: 8px; margin-top: 10px;
+      font-size: 14px;
+    }
+    .last-result.correct { background: rgba(46, 204, 113, 0.12); color: var(--green); border: 1px solid var(--green); }
+    .last-result.wrong { background: rgba(230, 57, 70, 0.12); color: var(--red); border: 1px solid var(--red); }
+    .last-result.duplicate { background: rgba(160, 160, 192, 0.1); color: var(--text-dim); border: 1px solid var(--border); }
+
+    #toast-container { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 1000; pointer-events: none; }
+    .toast {
+      background: var(--bg-3); border: 1px solid var(--border);
+      padding: 10px 16px; border-radius: 8px; font-size: 14px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.5); margin-top: 6px;
+    }
+    .toast.error { border-color: var(--red); color: var(--red); }
+    .toast.success { border-color: var(--green); color: var(--green); }
+
+    .game-over { text-align: center; padding: 20px 0; }
+    .game-over .winner {
+      font-family: 'Bebas Neue', sans-serif; font-size: 44px; color: var(--gold);
+      margin-bottom: 12px; text-shadow: 0 0 32px var(--gold-glow);
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <div id="toast-container"></div>
+  <script>
+    const API = '/api/feud';
+    const POLL_INTERVAL = 1500;
+
+    const state = {
+      session: null,
+      game: null,
+      pollTimer: null,
+      lastRenderKey: null
+    };
+
+    // === Session storage ===
+    function loadSession() {
+      try { return JSON.parse(sessionStorage.getItem('feud_session') || 'null'); } catch (e) { return null; }
+    }
+    function saveSession(s) {
+      try { sessionStorage.setItem('feud_session', JSON.stringify(s)); } catch (e) {}
+    }
+    function clearSession() {
+      sessionStorage.removeItem('feud_session');
+      state.session = null;
+      state.game = null;
+    }
+
+    // === API ===
+    async function api(path, body) {
+      const r = await fetch(API + '/' + path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body || {})
+      });
+      let data = null;
+      try { data = await r.json(); } catch (e) {}
+      if (!r.ok) throw new Error((data && data.error) || ('HTTP ' + r.status));
+      return data;
+    }
+
+    function esc(s) {
+      if (s == null) return '';
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function toast(msg, type) {
+      const c = document.getElementById('toast-container');
+      if (!c) return;
+      const el = document.createElement('div');
+      el.className = 'toast' + (type ? ' ' + type : '');
+      el.textContent = msg;
+      c.appendChild(el);
+      setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.3s'; }, 2700);
+      setTimeout(() => el.remove(), 3100);
+    }
+
+    async function startPolling() {
+      if (state.pollTimer) clearInterval(state.pollTimer);
+      const tick = async () => {
+        if (!state.session) return;
+        try {
+          const game = await api('state', state.session);
+          state.game = game;
+          render();
+        } catch (e) {
+          console.error('poll error', e);
+          if (String(e.message).includes('not found') || String(e.message).includes('404')) {
+            toast('Game expired or not found', 'error');
+            clearSession();
+            render();
+          }
+        }
+      };
+      await tick();
+      state.pollTimer = setInterval(tick, POLL_INTERVAL);
+    }
+
+    // === Actions ===
+    async function hostGame() {
+      const name = (document.getElementById('host-name').value || '').trim();
+      if (!name) { toast('Enter your name', 'error'); return; }
+      try {
+        const r = await api('create', { name });
+        state.session = { code: r.code, playerId: r.playerId, token: r.token, name };
+        saveSession(state.session);
+        await startPolling();
+      } catch (e) { toast(e.message, 'error'); }
+    }
+
+    async function joinGame() {
+      const code = ((document.getElementById('join-code') || {}).value || '').trim().toUpperCase();
+      const name = ((document.getElementById('join-name') || {}).value || '').trim();
+      if (!code || !name) { toast('Code and name required', 'error'); return; }
+      try {
+        const r = await api('join', { code, name });
+        state.session = { code: r.code, playerId: r.playerId, token: r.token, name };
+        saveSession(state.session);
+        await startPolling();
+      } catch (e) { toast(e.message, 'error'); }
+    }
+
+    async function doAction(action, payload) {
+      if (!state.session) return;
+      try {
+        return await api('action', Object.assign({}, state.session, { action, payload }));
+      } catch (e) { toast(e.message, 'error'); throw e; }
+    }
+
+    async function startGame() { try { await doAction('startGame', {}); } catch (e) {} }
+    async function switchTeam(team) { try { await doAction('switchTeam', { team }); } catch (e) {} }
+    async function nextRound() { try { await doAction('nextRound', {}); } catch (e) {} }
+
+    async function submitGuess() {
+      const input = document.getElementById('guess-input');
+      if (!input) return;
+      const guess = (input.value || '').trim();
+      if (!guess) return;
+      input.value = '';
+      input.disabled = true;
+      try { await doAction('submitGuess', { guess }); } catch (e) {} finally { setTimeout(() => { input.disabled = false; input.focus(); }, 400); }
+    }
+
+    function exitGame() {
+      if (state.pollTimer) clearInterval(state.pollTimer);
+      clearSession();
+      render();
+    }
+
+    // === Render ===
+    function render() {
+      const app = document.getElementById('app');
+      if (!state.session) return renderWelcome(app);
+      if (!state.game) return renderLoading(app);
+      const g = state.game;
+      if (g.status === 'lobby') return renderLobby(app, g);
+      if (g.state.phase === 'gameOver' || g.status === 'finished') return renderGameOver(app, g);
+      return renderGame(app, g);
+    }
+
+    function renderWelcome(app) {
+      const params = new URLSearchParams(location.search);
+      const codeParam = (params.get('code') || '').toUpperCase();
+      if (codeParam) {
+        app.innerHTML = `
+          <div class="welcome">
+            <div class="logo">
+              <h1>FAMILY FEUD</h1>
+              <div class="subtitle">// besmartai games //</div>
+            </div>
+            <div class="panel">
+              <h2>Join Game</h2>
+              <p class="small" style="margin-bottom: 12px;">Joining game <span style="color: var(--gold); font-weight: 700; letter-spacing: 0.1em;">${esc(codeParam)}</span></p>
+              <div class="stack">
+                <input type="text" id="join-name" placeholder="Your name" maxlength="24" autocomplete="off" />
+                <input type="hidden" id="join-code" value="${esc(codeParam)}" />
+                <button class="primary" onclick="joinGame()">JOIN GAME</button>
+              </div>
+            </div>
+          </div>
+        `;
+        setTimeout(() => { const i = document.getElementById('join-name'); if (i) i.focus(); }, 50);
+        return;
+      }
+      app.innerHTML = `
+        <div class="welcome">
+          <div class="logo">
+            <h1>FAMILY FEUD</h1>
+            <div class="subtitle">// besmartai games //</div>
+          </div>
+          <div class="panel">
+            <h2>Host New Game</h2>
+            <div class="stack">
+              <input type="text" id="host-name" placeholder="Your name" maxlength="24" autocomplete="off" />
+              <button class="primary" onclick="hostGame()">HOST GAME</button>
+            </div>
+          </div>
+          <div class="panel">
+            <h2>Join Existing</h2>
+            <div class="stack">
+              <input type="text" id="join-code" placeholder="Game code (6 letters)" maxlength="6" style="text-transform: uppercase;" autocomplete="off" />
+              <input type="text" id="join-name" placeholder="Your name" maxlength="24" autocomplete="off" />
+              <button class="primary" onclick="joinGame()">JOIN GAME</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderLoading(app) {
+      app.innerHTML = '<div class="welcome center"><h2>Loading...</h2></div>';
+    }
+
+    let _qrCache = {};
+    function qrSvgFor(code) {
+      if (typeof qrcode === 'undefined') return '';
+      if (_qrCache[code]) return _qrCache[code];
+      const url = location.origin + location.pathname + '?code=' + code;
+      const qr = qrcode(0, 'L');
+      qr.addData(url);
+      qr.make();
+      const svg = qr.createSvgTag({ cellSize: 4, scalable: true });
+      _qrCache[code] = svg;
+      return svg;
+    }
+
+    function renderLobby(app, g) {
+      const isHost = g.host === state.session.playerId;
+      const me = g.players.find(p => p.id === state.session.playerId);
+      const teamA = g.players.filter(p => p.teamId === 'A');
+      const teamB = g.players.filter(p => p.teamId === 'B');
+      const canStart = isHost && g.players.length >= 2 && teamA.length >= 1 && teamB.length >= 1;
+      const startMsg = canStart ? 'START GAME' : (g.players.length < 2 ? 'Need 2+ players' : 'Need 1 player per team');
+      app.innerHTML = `
+        <div class="stack">
+          <div class="lobby-code panel">
+            <div class="code">${esc(g.code)}</div>
+            <div class="label">Game Code</div>
+            <div class="qr-wrap" id="qr-wrap"></div>
+            <p class="small" style="margin-top: 10px;">Scan or share the code</p>
+          </div>
+          <div class="teams">
+            <div class="team-card team-a">
+              <div class="team-name">FAMILY A</div>
+              ${teamA.map(p => `<div class="player-row ${p.id === state.session.playerId ? 'you' : ''}">${esc(p.name)}${p.id === g.host ? ' 👑' : ''}</div>`).join('')}
+              ${me && me.teamId !== 'A' ? `<button onclick="switchTeam('A')" class="small" style="margin-top:8px; width: 100%;">Switch to A</button>` : ''}
+            </div>
+            <div class="team-card team-b">
+              <div class="team-name">FAMILY B</div>
+              ${teamB.map(p => `<div class="player-row ${p.id === state.session.playerId ? 'you' : ''}">${esc(p.name)}${p.id === g.host ? ' 👑' : ''}</div>`).join('')}
+              ${me && me.teamId !== 'B' ? `<button onclick="switchTeam('B')" class="small" style="margin-top:8px; width: 100%;">Switch to B</button>` : ''}
+            </div>
+          </div>
+          ${isHost ? `<button class="primary" onclick="startGame()" ${canStart ? '' : 'disabled'}>${startMsg}</button>` : '<p class="center small">Waiting for host to start...</p>'}
+          <button onclick="exitGame()" class="small">Leave game</button>
+        </div>
+      `;
+      const qrWrap = document.getElementById('qr-wrap');
+      if (qrWrap) qrWrap.innerHTML = qrSvgFor(g.code);
+    }
+
+    function renderGame(app, g) {
+      const q = g.questions[g.currentRound];
+      if (!q || q.hidden) { app.innerHTML = '<div class="center"><h2>Loading round...</h2></div>'; return; }
+      const me = g.players.find(p => p.id === state.session.playerId);
+      const isHost = g.host === state.session.playerId;
+      const phase = g.state.phase;
+      const myTeam = me ? me.teamId : null;
+      let canGuess = false;
+      let phaseLabel = '';
+      let phaseClass = phase;
+      if (phase === 'faceoff') {
+        const alreadyGuessed = !!(g.state.faceoffGuesses && g.state.faceoffGuesses[myTeam]);
+        canGuess = !alreadyGuessed && !!myTeam;
+        phaseLabel = alreadyGuessed ? 'FACE-OFF — Waiting for other team' : 'FACE-OFF — Submit your team\'s guess';
+      } else if (phase === 'control') {
+        canGuess = !!(me && me.teamId === g.state.controllingTeam);
+        const ct = g.state.controllingTeam;
+        phaseLabel = (g.teams[ct] && g.teams[ct].name ? g.teams[ct].name.toUpperCase() : 'TEAM') + ' HAS CONTROL';
+      } else if (phase === 'steal') {
+        const stealingTeam = g.state.controllingTeam === 'A' ? 'B' : 'A';
+        canGuess = !!(me && me.teamId === stealingTeam);
+        phaseLabel = (g.teams[stealingTeam].name.toUpperCase()) + ' — STEAL OPPORTUNITY (one guess!)';
+      } else if (phase === 'reveal') {
+        phaseLabel = 'ROUND COMPLETE';
+      }
+      const controllingClass = (team) => phase === 'control' && g.state.controllingTeam === team ? 'active' : '';
+      const boardHtml = q.answers.map(a => {
+        if (a.hidden) {
+          return `<div class="answer-slot hidden-ans"><div class="rank">${a.rank + 1}</div><div class="ans-text">— — —</div><div class="pts"></div></div>`;
+        }
+        return `<div class="answer-slot revealed"><div class="rank">${a.rank + 1}</div><div class="ans-text">${esc(a.text)}</div><div class="pts">${a.points}</div></div>`;
+      }).join('');
+      let lastResultHtml = '';
+      const r = g.state.lastResult;
+      if (r) {
+        if (r.type === 'correct') lastResultHtml = `<div class="last-result correct">✓ ${esc(r.playerName)}: "${esc(r.guess)}" — ${r.points} pts</div>`;
+        else if (r.type === 'wrong') lastResultHtml = `<div class="last-result wrong">✗ ${esc(r.playerName)}: "${esc(r.guess)}" — STRIKE</div>`;
+        else if (r.type === 'duplicate') lastResultHtml = `<div class="last-result duplicate">"${esc(r.guess)}" — already revealed (strike)</div>`;
+        else if (r.type === 'stealSuccess') lastResultHtml = `<div class="last-result correct">🎉 ${esc(g.teams[r.team].name)} stole ${r.points} pts!</div>`;
+        else if (r.type === 'stealFail') lastResultHtml = `<div class="last-result wrong">Steal failed — ${esc(g.teams[r.team].name)} keeps ${r.points} pts</div>`;
+        else if (r.type === 'roundWonByControl') lastResultHtml = `<div class="last-result correct">${esc(g.teams[r.team].name)} wins ${r.points} pts!</div>`;
+      }
+      const faceoffGuessHtml = phase === 'faceoff' && g.state.faceoffGuesses ? `
+        <div class="row" style="margin-bottom: 10px; font-size: 12px;">
+          <div style="flex:1; padding: 8px; border-radius: 6px; background: rgba(66,135,245,0.15); text-align: center;">A: ${g.state.faceoffGuesses.A ? '"' + esc(g.state.faceoffGuesses.A.guess) + '"' : '<span style="opacity:0.5;">waiting</span>'}</div>
+          <div style="flex:1; padding: 8px; border-radius: 6px; background: rgba(245,66,135,0.15); text-align: center;">B: ${g.state.faceoffGuesses.B ? '"' + esc(g.state.faceoffGuesses.B.guess) + '"' : '<span style="opacity:0.5;">waiting</span>'}</div>
+        </div>` : '';
+      const strikesHtml = (phase === 'control' || phase === 'steal') ? `
+        <div class="strikes">
+          <span class="strike ${g.state.strikes >= 1 ? 'active' : ''}">✗</span>
+          <span class="strike ${g.state.strikes >= 2 ? 'active' : ''}">✗</span>
+          <span class="strike ${g.state.strikes >= 3 ? 'active' : ''}">✗</span>
+        </div>` : '';
+      const guessUiHtml = canGuess ? `
+        <div class="guess-input">
+          <input type="text" id="guess-input" placeholder="Type your answer..." onkeydown="if(event.key==='Enter')submitGuess()" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+          <button class="primary" onclick="submitGuess()">GO</button>
+        </div>` : !myTeam ? '<p class="center small">You\'re not on a team — return to lobby</p>' : `<p class="center small">${phase === 'faceoff' ? 'Waiting for other team\'s guess...' : phase === 'reveal' ? 'Waiting for host to start next round...' : 'Other team is guessing...'}</p>`;
+      const potHtml = (phase === 'control' || phase === 'steal') && g.state.pot > 0 ? `<p class="center small" style="margin-top:6px;">Round pot: <span style="color:var(--gold); font-weight:700;">${g.state.pot}</span>${q.multiplier > 1 ? ` × ${q.multiplier} = ${g.state.pot * q.multiplier}` : ''}</p>` : '';
+      const nextBtnHtml = phase === 'reveal' && isHost ? `<button class="primary" onclick="nextRound()" style="margin-top: 12px;">${g.currentRound + 1 >= g.settings.roundsTotal ? 'END GAME' : 'NEXT ROUND'}</button>` : '';
+      const multBadge = q.multiplier > 1 ? `<span class="multiplier">×${q.multiplier}</span>` : '';
+      app.innerHTML = `
+        <div class="scoreboard">
+          <div class="score-card team-a ${controllingClass('A')}">
+            <div class="score-name">${esc(g.teams.A.name)}</div>
+            <div class="score-value">${g.teams.A.score}</div>
+          </div>
+          <div class="score-card team-b ${controllingClass('B')}">
+            <div class="score-name">${esc(g.teams.B.name)}</div>
+            <div class="score-value">${g.teams.B.score}</div>
+          </div>
+        </div>
+        <div class="phase-banner ${phaseClass}">${esc(phaseLabel)}</div>
+        <div class="question">
+          <div class="round-label">Round ${g.currentRound + 1} of ${g.settings.roundsTotal}${multBadge ? '' : ''}</div>
+          <div class="q-text">${esc(q.question)}${multBadge}</div>
+        </div>
+        <div class="board">${boardHtml}</div>
+        ${faceoffGuessHtml}
+        ${strikesHtml}
+        ${lastResultHtml}
+        ${guessUiHtml}
+        ${potHtml}
+        ${nextBtnHtml}
+        <p class="center small" style="margin-top: 14px; opacity: 0.6;">Game ${esc(g.code)} · ${g.players.length} players</p>
+      `;
+      if (canGuess) { setTimeout(() => { const i = document.getElementById('guess-input'); if (i && document.activeElement !== i) i.focus(); }, 50); }
+    }
+
+    function renderGameOver(app, g) {
+      const winner = g.state.winnerTeam;
+      const winnerName = winner ? g.teams[winner].name : null;
+      app.innerHTML = `
+        <div class="game-over">
+          ${winner ? `<div class="winner">🏆 ${esc(winnerName)} WINS! 🏆</div>` : '<div class="winner">TIE GAME!</div>'}
+          <div class="scoreboard" style="max-width: 400px; margin: 24px auto;">
+            <div class="score-card team-a ${winner === 'A' ? 'active' : ''}">
+              <div class="score-name">${esc(g.teams.A.name)}</div>
+              <div class="score-value">${g.teams.A.score}</div>
+            </div>
+            <div class="score-card team-b ${winner === 'B' ? 'active' : ''}">
+              <div class="score-name">${esc(g.teams.B.name)}</div>
+              <div class="score-value">${g.teams.B.score}</div>
+            </div>
+          </div>
+          <h2 style="margin-top: 28px;">Final Board</h2>
+          ${g.questions.map((q, i) => `
+            <div class="panel" style="margin-top: 12px; text-align: left;">
+              <div class="small" style="color: var(--text-dim); margin-bottom: 6px; letter-spacing: 0.2em; text-transform: uppercase;">Round ${i + 1}${q.multiplier > 1 ? ' (×' + q.multiplier + ')' : ''}</div>
+              <div style="font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--gold); margin-bottom: 8px;">${esc(q.question)}</div>
+              <div class="board" style="margin-bottom: 0;">
+                ${(q.answers || []).map(a => `
+                  <div class="answer-slot revealed">
+                    <div class="rank">${a.rank + 1}</div>
+                    <div class="ans-text">${esc(a.text || '')}</div>
+                    <div class="pts">${a.points || ''}</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `).join('')}
+          <button onclick="exitGame()" style="margin-top: 24px;">New Game</button>
+        </div>
+      `;
+    }
+
+    // === Boot ===
+    state.session = loadSession();
+    if (state.session) startPolling();
+    render();
+  </script>
+</body>
+</html>
