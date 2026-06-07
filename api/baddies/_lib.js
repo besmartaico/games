@@ -1,34 +1,49 @@
 // Shared game logic for The Baddies
 // This module is used by all API endpoints. Pure functions where possible.
 
-import { createClient } from 'redis';
+import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 
-// Lazy singleton Redis client (Vercel reuses lambda containers between calls)
-let _redis = null;
-async function getRedis() {
-  if (_redis && _redis.isOpen) return _redis;
-  _redis = createClient({ url: process.env.REDIS_URL });
-  _redis.on('error', (err) => console.error('Redis error:', err));
-  await _redis.connect();
-  return _redis;
+// Lazy singleton Supabase client (Vercel reuses lambda containers between calls)
+let _sb = null;
+function getSupabase() {
+  if (_sb) return _sb;
+  _sb = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+    { auth: { persistSession: false } }
+  );
+  return _sb;
 }
 
-// ============ KV helpers ============
+// ============ KV helpers (Supabase Postgres backend) ============
 
-export const gameKey = (code) => `baddies:game:${code}`;
+export const gameKey = (code) => code;
 
 export async function getGame(code) {
-  const redis = await getRedis();
-  const raw = await redis.get(gameKey(code));
-  return raw ? JSON.parse(raw) : null;
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from('games')
+    .select('state, expires_at')
+    .eq('code', code)
+    .gt('expires_at', new Date().toISOString())
+    .maybeSingle();
+  if (error) throw error;
+  return data ? data.state : null;
 }
 
 export async function saveGame(game) {
   game.updatedAt = Date.now();
-  const redis = await getRedis();
-  // 24-hour TTL — abandoned games auto-expire
-  await redis.set(gameKey(game.code), JSON.stringify(game), { EX: 86400 });
+  const sb = getSupabase();
+  const { error } = await sb
+    .from('games')
+    .upsert({
+      code: game.code,
+      state: game,
+      expires_at: new Date(Date.now() + 86400 * 1000).toISOString(),
+      updated_at: new Date().toISOString()
+    });
+  if (error) throw error;
 }
 
 // ============ ID generation ============
