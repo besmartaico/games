@@ -1229,7 +1229,8 @@ const state = {
   lastPhase: null,
   botBusy: false,        // bot driver lock
   lastBotChatTs: 0,      // throttle bot chat
-  fetchErrCount: 0
+  fetchErrCount: 0,
+  lastError: null        // last poll error message (shown on the connecting screen)
 };
 
 // ===== Storage =====
@@ -1284,6 +1285,7 @@ async function pollOnce() {
     const since = state.game?.updatedAt || 0;
     const data = await api('state', { ...state.session, since }, 'GET');
     state.fetchErrCount = 0;
+    state.lastError = null;
     if (data.unchanged) {
       // Even when state hasn't changed, give the bot driver a chance to retry.
       // Without this, a single failed bot action would leave the game stuck forever
@@ -1301,14 +1303,25 @@ async function pollOnce() {
     onStateUpdate();
   } catch (e) {
     state.fetchErrCount++;
-    if (state.fetchErrCount > 3) {
-      toast(`Connection issue: ${e.message}`, 'error');
-    }
-    if (e.message && e.message.toLowerCase().includes('not found')) {
+    state.lastError = e.message || 'Connection error';
+    const msg = (e.message || '').toLowerCase();
+    // Dead session: the game is gone (404) or our identity no longer matches it (403).
+    // The latter happens after a game expires and its code is reused, or the DB is
+    // restored — the saved session is useless, so drop it and return to welcome
+    // instead of looping forever on "Establishing secure channel".
+    if (msg.includes('not found') || msg.includes('invalid identity')) {
       stopPolling();
       saveSession(null);
       render();
-      toast('Game ended or expired.', 'error');
+      toast('Session expired — start or join a new game.', 'error');
+      return;
+    }
+    // Still connecting (never loaded a game) and errors persist: re-render so the
+    // connecting screen can surface the error + a "Start over" button rather than
+    // hang silently. An in-progress game keeps polling through transient blips.
+    if (!state.game) render();
+    if (state.fetchErrCount > 3) {
+      toast(`Connection issue: ${e.message}`, 'error');
     }
   }
 }
@@ -1356,7 +1369,7 @@ function renderSignature() {
   // Captures everything that affects what's drawn. If unchanged, skip the rebuild.
   if (!state.session) return 'welcome:' + (new URLSearchParams(location.search).get('code') || '');
   const g = state.game;
-  if (!g) return 'connecting';
+  if (!g) return 'connecting:' + state.fetchErrCount;
   const phase = g.state ? g.state.phase : '-';
   const handlerIdx = g.state ? g.state.handlerIdx : -1;
   const opIdx = g.state ? g.state.operativeIdx : -1;
@@ -1398,7 +1411,14 @@ function render() {
     return;
   }
   if (!state.game) {
-    root.innerHTML = `<div class="brand"><div class="pre">// connecting</div><h1>THE <span>BADDIES</span></h1></div><div class="center dim">Establishing secure channel<span class="cursor-blink"></span></div>`;
+    const brand = `<div class="brand"><div class="pre">// connecting</div><h1>THE <span>BADDIES</span></h1></div>`;
+    if (state.fetchErrCount > 2) {
+      root.innerHTML = brand
+        + `<div class="center dim">Couldn't reach the agency.<br><span style="color:var(--text-faint); font-size:12px;">${state.lastError || 'Connection error'}</span></div>`
+        + `<div class="btn-row" style="margin-top:16px;"><button class="primary" onclick="resetSession()">START OVER</button></div>`;
+    } else {
+      root.innerHTML = brand + `<div class="center dim">Establishing secure channel<span class="cursor-blink"></span></div>`;
+    }
     return;
   }
   const g = state.game;
@@ -1548,6 +1568,17 @@ async function joinFromInvite(code) {
   } catch (e) {
     toast(e.message, 'error');
   }
+}
+
+// Drop the current session and return to the welcome screen. Used by the
+// "Start over" button when the connecting screen can't reach the server.
+function resetSession() {
+  stopPolling();
+  state.game = null;
+  state.fetchErrCount = 0;
+  state.lastError = null;
+  saveSession(null);
+  render();
 }
 
 // =====================================================================
