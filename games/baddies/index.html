@@ -1381,7 +1381,7 @@ function renderSignature() {
   const peek = g.state && g.state.peekResult ? '1' : '0';
   return [
     g.status, phase, g.code, handlerIdx, opIdx, playersSig, votesSig,
-    g.state ? g.state.missionTrack.clean + '/' + g.state.missionTrack.compromised : '',
+    g.state && g.state.missionTrack ? g.state.missionTrack.clean + '/' + g.state.missionTrack.compromised : '',
     g.state ? g.state.rejectionCount : '',
     draw, handCards, power, peek,
     state.rolesShown ? '1' : '0',
