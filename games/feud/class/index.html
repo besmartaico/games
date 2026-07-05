@@ -90,7 +90,6 @@
   }
   .pot .pts { font-family: 'Bebas Neue', sans-serif; font-size: 40px; line-height: 1; color: var(--gold); }
   .pot .lbl { font-size: 10px; font-weight: 800; letter-spacing: 0.15em; color: var(--text-dim); }
-  .mult { font-size: 13px; font-weight: 800; color: var(--text-dim); letter-spacing: 0.08em; }
 
   /* ===== Question ===== */
   .question {
@@ -210,7 +209,6 @@
     <div class="mid">
       <div class="round-label" id="roundLabel"></div>
       <div class="pot"><div class="pts" id="potEl">0</div><div class="lbl">POT</div></div>
-      <div class="mult" id="multEl"></div>
     </div>
     <div class="team-box" id="box1" style="border-color: var(--team-b);">
       <div class="tname" style="color: var(--team-b);"></div>
@@ -227,7 +225,7 @@
     <button class="strike-btn" id="strikeBtn">✖ STRIKE</button>
     <button class="award-a" id="award0"></button>
     <button class="award-b" id="award1"></button>
-    <button id="revealRestBtn">Reveal Rest</button>
+    <button id="revealRestBtn">Reveal Rest (no points)</button>
     <button class="primary hidden" id="nextBtn">NEXT ROUND →</button>
   </div>
   <div class="footer-nav"><a href="#" id="quitLink">End game</a></div>
@@ -362,11 +360,11 @@
     renderAll();
   }
 
+  // Pot is exactly the sum of revealed answers — no round multiplier.
   function pot() {
     const q = rounds[cur];
     return q.answers.reduce((s, a, i) => s + (revealed[i] === 'live' ? a.points : 0), 0);
   }
-  function multiplier() { return cur + 1; }
 
   // ---- controls ----
   function strike() {
@@ -383,15 +381,16 @@
 
   function award(teamIdx) {
     if (awarded) return;
-    teams[teamIdx].score += pot() * multiplier();
+    teams[teamIdx].score += pot();
     awarded = true;
     sound('ding');
     renderAll();
   }
 
+  // Always a no-point reveal: shows what the teams missed without touching the pot.
   function revealRest() {
     const q = rounds[cur];
-    q.answers.forEach((a, i) => { if (!revealed[i]) revealed[i] = awarded ? 'late' : 'live'; });
+    q.answers.forEach((a, i) => { if (!revealed[i]) revealed[i] = 'late'; });
     renderAll();
   }
 
@@ -399,9 +398,8 @@
   function renderAll() {
     const q = rounds[cur];
     $('roundLabel').textContent = 'ROUND ' + (cur + 1) + ' OF ' + rounds.length;
-    $('multEl').textContent = '×' + multiplier() + ' POINTS';
     $('questionEl').textContent = q.question;
-    $('potEl').textContent = awarded ? 0 : pot() * multiplier();
+    $('potEl').textContent = awarded ? 0 : pot();
 
     for (const t of [0, 1]) {
       $('box' + t).querySelector('.tscore').textContent = teams[t].score;
