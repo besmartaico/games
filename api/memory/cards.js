@@ -1,9 +1,11 @@
 // GET /api/memory/cards — Q/A pairs for Memory Match, from a Google Sheet.
 // Sheet columns (header row required, case-insensitive): id | question | answer
 // The id column is optional — row number is used when missing.
-// Until a sheet is configured, built-in sample cards are served so the game stays playable.
+// The sheet must be shared as anyone-with-link (viewer) for the gviz endpoint to work.
+// If the sheet is unreachable, built-in sample cards are served with a warning so the
+// game stays playable while the problem is visible on the setup screen.
 
-const SHEET_ID = process.env.MEMORY_SHEET_ID || '';
+const SHEET_ID = process.env.MEMORY_SHEET_ID || '1AwsZF0Wis3LGAecLNzhv3K9pVdbr6W1uNlWvvWdLEiI';
 
 const SAMPLE_CARDS = [
   { id: '1', question: 'What planet is known as the Red Planet?', answer: 'Mars' },
@@ -49,6 +51,9 @@ async function fetchSheetCards() {
   const resp = await fetch(url);
   if (!resp.ok) throw new Error('Sheet fetch failed: ' + resp.status);
   const csv = await resp.text();
+  if (csv.trimStart().startsWith('<')) {
+    throw new Error('Sheet is not shared publicly. In Google Sheets: Share > Anyone with the link > Viewer.');
+  }
   const rows = parseCsv(csv).filter(r => r.length && r.some(c => c && c.trim()));
   if (!rows.length) return [];
   const headers = rows[0].map(h => (h || '').trim().toLowerCase());
@@ -72,13 +77,10 @@ async function fetchSheetCards() {
 
 export default async function handler(req, res) {
   try {
-    if (!SHEET_ID) {
-      return res.json({ count: SAMPLE_CARDS.length, cards: SAMPLE_CARDS, source: 'sample' });
-    }
     const cards = await fetchSheetCards();
     res.json({ count: cards.length, cards, source: 'sheet' });
   } catch (e) {
     console.error('memory/cards error:', e);
-    res.status(500).json({ error: e.message });
+    res.json({ count: SAMPLE_CARDS.length, cards: SAMPLE_CARDS, source: 'sample', warning: e.message });
   }
 }

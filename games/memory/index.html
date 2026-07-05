@@ -95,7 +95,7 @@
   }
   .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 
-  .tile { position: relative; width: 100%; aspect-ratio: 1 / 1; perspective: 600px; border: none; background: none; padding: 0; cursor: pointer; }
+  .tile { position: relative; width: 100%; aspect-ratio: 1 / 1; perspective: 600px; border: none; background: none; padding: 0; cursor: pointer; color: var(--text); font-family: inherit; }
   .tile-inner {
     position: absolute; inset: 0; border-radius: 12px;
     transition: transform 0.5s; transform-style: preserve-3d;
@@ -161,7 +161,7 @@
   <div class="top">
     <div>
       <h1><span class="icon">🧠</span>Memory Match</h1>
-      <div class="sub">Match each question on the left with its answer on the right.</div>
+      <div class="sub">Flip a question on the left first, then find its matching answer on the right.</div>
     </div>
     <button type="button" class="btn hidden" id="resetBtn">Reset</button>
   </div>
@@ -301,9 +301,12 @@
       cardsSource = data.source || null;
       if (rows.length < PAIRS) {
         $('statusEl').innerHTML = '<span class="err">Need at least ' + PAIRS + ' rows in the Google Sheet. Currently: ' + rows.length + '</span>';
+      } else if (cardsSource === 'sample') {
+        const why = data.warning ? ': ' + data.warning : '';
+        $('statusEl').innerHTML = '<span class="err">Google Sheet unavailable' + why + '</span><br>Playing with built-in sample cards for now.';
+        $('startBtn').disabled = false;
       } else {
-        const src = cardsSource === 'sample' ? ' (built-in sample cards — Google Sheet not configured yet)' : ' from Google Sheet';
-        $('statusEl').innerHTML = '<span class="ok">Loaded ' + rows.length + ' cards' + src + '.</span>';
+        $('statusEl').innerHTML = '<span class="ok">Loaded ' + rows.length + ' cards from Google Sheet.</span>';
         $('startBtn').disabled = false;
       }
     } catch (e) {
@@ -431,6 +434,7 @@
       if (selectedQ) return;
       selectedQ = tile;
     } else {
+      if (!selectedQ) { flashHint('Pick a question first'); return; }
       if (selectedA) return;
       selectedA = tile;
     }
@@ -545,6 +549,15 @@
     } else {
       el.textContent = '';
     }
+  }
+
+  let hintTimeout = null;
+  function flashHint(msg) {
+    if (mmRemaining !== null && mmRemaining > 0) return; // countdown owns the slot
+    const el = $('countdownEl');
+    el.textContent = msg;
+    clearTimeout(hintTimeout);
+    hintTimeout = setTimeout(() => { if (!(mmRemaining !== null && mmRemaining > 0)) el.textContent = ''; }, 1500);
   }
 
   // ---- wire up ----
