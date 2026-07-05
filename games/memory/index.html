@@ -115,9 +115,10 @@
     padding: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center;
   }
   .tile-front .txt {
-    font-size: 11px; font-weight: 600; line-height: 1.3; text-align: center;
-    overflow: hidden; display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical;
-    word-break: break-word;
+    font-size: 14px; /* JS auto-fits per tile */
+    font-weight: 600; line-height: 1.2; text-align: center;
+    overflow: hidden; width: 100%;
+    /* no word-break: a too-wide word must overflow so the auto-fitter shrinks it */
   }
   .tile.matched { cursor: zoom-in; }
 
@@ -367,6 +368,7 @@
     $('resetBtn').classList.remove('hidden');
     renderScoreboard();
     renderTiles();
+    fitTileText();  // boards must be visible for measurements
   }
 
   function resetGame() {
@@ -411,6 +413,30 @@
       }
     }
   }
+
+  // Size each tile's text as large as possible while still fitting the card.
+  function fitTileText() {
+    for (const btn of tileEls.values()) {
+      const front = btn.querySelector('.tile-front');
+      const txt = front.querySelector('.txt');
+      const maxW = front.clientWidth - 12;   // minus front padding
+      const maxH = front.clientHeight - 12;
+      if (maxW <= 0 || maxH <= 0) continue;
+      let size = 30;
+      txt.style.fontSize = size + 'px';
+      while (size > 9 && (txt.scrollHeight > maxH || txt.scrollWidth > maxW)) {
+        size--;
+        txt.style.fontSize = size + 'px';
+      }
+    }
+  }
+
+  let fitTimeout = null;
+  window.addEventListener('resize', () => {
+    if (!started) return;
+    clearTimeout(fitTimeout);
+    fitTimeout = setTimeout(fitTileText, 150);
+  });
 
   function isSelected(tile) {
     return (tile.side === 'Q' && selectedQ && selectedQ.key === tile.key)
