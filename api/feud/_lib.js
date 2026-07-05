@@ -53,7 +53,7 @@ export function newPlayerId() { return 'p_' + crypto.randomBytes(8).toString('he
 export function newToken() { return crypto.randomBytes(16).toString('hex'); }
 
 // ============ Question fetching from Google Sheets ============
-const SHEET_ID = '1LjT4WU36_B8WQA4UVzVEtBYaxvGl6UdONYFK5MIJFZ4';
+const SHEET_ID = '1BmameVhfEWp2OQ9VxadWq_MiipbmrXpUa2PCdjf0niY';
 
 export async function fetchQuestions() {
   const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=0`;
