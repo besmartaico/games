@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Memory Match — BeSmart Games</title>
+<meta name="description" content="Team memory game: match questions to answers. Two teams, one screen.">
+<style>
+  :root {
+    --bg: #0f1117;
+    --panel: #1a1d27;
+    --panel2: #232736;
+    --border: #2e3345;
+    --text: #e8eaf2;
+    --muted: #9aa0b4;
+    --accent: #a78bfa;
+    --accent-deep: #7c3aed;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { min-height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: radial-gradient(1200px 600px at 50% -100px, #241b3a 0%, var(--bg) 60%);
+    color: var(--text);
+    padding: 16px 12px 48px;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; }
+
+  .top {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; margin-bottom: 16px;
+  }
+  .top h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+  .top h1 .icon { margin-right: 8px; }
+  .top .sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
+  .btn {
+    display: inline-block; border: 1px solid var(--border); background: var(--panel);
+    color: var(--text); border-radius: 12px; padding: 10px 16px; font-size: 14px;
+    font-weight: 600; cursor: pointer; transition: background 0.15s;
+  }
+  .btn:hover { background: var(--panel2); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn.primary {
+    background: linear-gradient(135deg, var(--accent-deep), #5b21b6);
+    border-color: var(--accent-deep); color: white;
+  }
+  .btn.primary:hover:enabled { filter: brightness(1.15); }
+
+  /* ===== Setup ===== */
+  .panel {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 18px; padding: 20px; margin-bottom: 20px;
+  }
+  .setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .field label { display: block; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .field input[type=text], .field select {
+    width: 100%; background: var(--panel2); border: 1px solid var(--border);
+    border-radius: 10px; color: var(--text); padding: 10px 12px; font-size: 15px;
+  }
+  .field input[type=color] {
+    width: 100%; height: 42px; background: var(--panel2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 4px; cursor: pointer;
+  }
+  .setup-actions { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+  .status { margin-top: 14px; font-size: 13px; color: var(--muted); }
+  .status .err { color: #f87171; }
+  .status .ok { color: #4ade80; }
+
+  /* ===== Scoreboard ===== */
+  .scoreboard {
+    position: sticky; top: 8px; z-index: 20;
+    background: var(--panel); border: 2px solid var(--border);
+    border-radius: 16px; padding: 12px 16px; margin-bottom: 18px;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.45);
+  }
+  .turn { display: flex; align-items: center; gap: 8px; font-size: 14px; min-width: 0; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+  .turn .name { font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .countdown { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .scores { display: flex; gap: 8px; }
+  .score-chip {
+    border: 1px solid var(--border); border-radius: 12px; padding: 6px 12px;
+    background: var(--panel2); text-align: center;
+  }
+  .score-chip .t { font-size: 11px; font-weight: 700; max-width: 90px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .score-chip .s { font-size: 18px; font-weight: 800; }
+
+  /* ===== Boards ===== */
+  .boards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .board { background: var(--panel); border: 1px solid var(--border); border-radius: 18px; padding: 14px; }
+  .board h2 {
+    font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--muted); margin-bottom: 12px; text-align: center;
+  }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+
+  .tile { position: relative; width: 100%; aspect-ratio: 1 / 1; perspective: 600px; border: none; background: none; padding: 0; cursor: pointer; }
+  .tile-inner {
+    position: absolute; inset: 0; border-radius: 12px;
+    transition: transform 0.5s; transform-style: preserve-3d;
+  }
+  .tile.faceup .tile-inner { transform: rotateY(180deg); }
+  .tile-face {
+    position: absolute; inset: 0; border-radius: 12px; backface-visibility: hidden;
+    -webkit-backface-visibility: hidden; border: 2px solid var(--border);
+  }
+  .tile-back {
+    background: linear-gradient(135deg, #232736, #1a1d27);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; color: #3b4059;
+  }
+  .tile-front {
+    background: var(--panel2); transform: rotateY(180deg);
+    padding: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center;
+  }
+  .tile-front .txt {
+    font-size: 11px; font-weight: 600; line-height: 1.3; text-align: center;
+    overflow: hidden; display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical;
+    word-break: break-word;
+  }
+  .tile.matched { cursor: zoom-in; }
+
+  /* ===== Zoom overlay ===== */
+  .overlay {
+    position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,0.72);
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .overlay.show { display: flex; }
+  .zoom-card {
+    width: 100%; max-width: 560px; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 18px; padding: 22px; box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  }
+  .zoom-card .kind { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); }
+  .zoom-card .txt { margin-top: 12px; font-size: 20px; line-height: 1.5; white-space: pre-wrap; }
+  .zoom-card .hint { margin-top: 16px; font-size: 12px; color: var(--muted); }
+  .zoom-card .close-row { display: flex; justify-content: flex-end; margin-top: 16px; }
+
+  /* ===== Winner banner ===== */
+  .winner {
+    display: none; text-align: center; background: var(--panel);
+    border: 2px solid var(--accent-deep); border-radius: 18px; padding: 24px; margin-bottom: 18px;
+  }
+  .winner.show { display: block; }
+  .winner .big { font-size: 26px; font-weight: 800; margin-bottom: 6px; }
+  .winner .sub { color: var(--muted); font-size: 14px; margin-bottom: 14px; }
+
+  .hidden { display: none !important; }
+
+  @media (max-width: 700px) {
+    .boards { grid-template-columns: 1fr; }
+    .setup-grid { grid-template-columns: 1fr; }
+    .scoreboard { flex-wrap: wrap; }
+    .top h1 { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <div>
+      <h1><span class="icon">🧠</span>Memory Match</h1>
+      <div class="sub">Match each question on the left with its answer on the right.</div>
+    </div>
+    <button type="button" class="btn hidden" id="resetBtn">Reset</button>
+  </div>
+
+  <!-- Setup -->
+  <div class="panel" id="setupPanel">
+    <div class="setup-grid">
+      <div class="field">
+        <label for="t1name">Team 1 Name</label>
+        <input type="text" id="t1name" value="Team 1" maxlength="20">
+      </div>
+      <div class="field">
+        <label for="t1color">Team 1 Color</label>
+        <input type="color" id="t1color" value="#22c55e">
+      </div>
+      <div class="field">
+        <label for="t2name">Team 2 Name</label>
+        <input type="text" id="t2name" value="Team 2" maxlength="20">
+      </div>
+      <div class="field">
+        <label for="t2color">Team 2 Color</label>
+        <input type="color" id="t2color" value="#a78bfa">
+      </div>
+      <div class="field">
+        <label for="firstSel">Who goes first?</label>
+        <select id="firstSel">
+          <option value="0">Team 1</option>
+          <option value="1">Team 2</option>
+        </select>
+      </div>
+    </div>
+    <div class="setup-actions">
+      <button type="button" class="btn primary" id="startBtn" disabled>Start Game</button>
+      <button type="button" class="btn" id="refreshBtn">Refresh Cards</button>
+    </div>
+    <div class="status" id="statusEl">Loading cards…</div>
+  </div>
+
+  <!-- Winner -->
+  <div class="winner" id="winnerEl">
+    <div class="big" id="winnerText"></div>
+    <div class="sub" id="winnerSub"></div>
+    <button type="button" class="btn primary" id="againBtn">Play Again</button>
+  </div>
+
+  <!-- Scoreboard -->
+  <div class="scoreboard hidden" id="scoreboardEl">
+    <div class="turn">
+      <div class="dot" id="turnDot"></div>
+      <span style="color: var(--muted); font-size: 13px;">Turn:</span>
+      <span class="name" id="turnName"></span>
+      <span class="countdown" id="countdownEl"></span>
+    </div>
+    <div class="scores">
+      <div class="score-chip" id="chip0"><div class="t"></div><div class="s">0</div></div>
+      <div class="score-chip" id="chip1"><div class="t"></div><div class="s">0</div></div>
+    </div>
+  </div>
+
+  <!-- Boards -->
+  <div class="boards hidden" id="boardsEl">
+    <div class="board">
+      <h2>Questions</h2>
+      <div class="grid" id="qGrid"></div>
+    </div>
+    <div class="board">
+      <h2>Answers</h2>
+      <div class="grid" id="aGrid"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Zoom overlay -->
+<div class="overlay" id="overlayEl">
+  <div class="zoom-card" id="zoomCard">
+    <div class="kind" id="zoomKind"></div>
+    <div class="txt" id="zoomTxt"></div>
+    <div class="hint" id="zoomHint">Tap the same flipped card again to open or close this view.</div>
+    <div class="close-row"><button type="button" class="btn" id="zoomClose">Close</button></div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const PAIRS = 15;
+  const MISMATCH_MS = 5000;
+
+  // ---- state ----
+  let rows = [];              // [{id, question, answer}]
+  let cardsSource = null;     // 'sheet' | 'sample'
+  let started = false;
+  let teams = [];             // [{name, color, score}]
+  let activeTeam = 0;
+  let qTiles = [], aTiles = [];        // {key, id, side, text}
+  let tileEls = new Map();             // key -> button element
+  let selectedQ = null, selectedA = null;   // tile objects
+  let matched = new Map();             // key -> teamIndex
+  let zoomed = null;                   // tile object
+  // mismatch timer
+  let mmInterval = null, mmStart = null, mmDuration = 0, mmRemaining = null;
+
+  function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function lighten(hex, amt) {
+    const h = hex.replace('#', '');
+    const n = i => parseInt(h.slice(i, i + 2), 16);
+    const mix = c => Math.round(c + (255 - c) * amt).toString(16).padStart(2, '0');
+    return '#' + mix(n(0)) + mix(n(2)) + mix(n(4));
+  }
+
+  // Team-tinted tile front on the dark theme: darken toward panel color instead of white.
+  function tint(hex) {
+    const h = hex.replace('#', '');
+    const n = i => parseInt(h.slice(i, i + 2), 16);
+    const mix = (c, b) => Math.round(b + (c - b) * 0.28).toString(16).padStart(2, '0');
+    return '#' + mix(n(0), 0x23) + mix(n(2), 0x27) + mix(n(4), 0x36);
+  }
+
+  // ---- cards ----
+  async function fetchCards() {
+    $('statusEl').innerHTML = 'Loading cards…';
+    $('startBtn').disabled = true;
+    try {
+      const res = await fetch('/api/memory/cards', { cache: 'no-store' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+      rows = data.cards || [];
+      cardsSource = data.source || null;
+      if (rows.length < PAIRS) {
+        $('statusEl').innerHTML = '<span class="err">Need at least ' + PAIRS + ' rows in the Google Sheet. Currently: ' + rows.length + '</span>';
+      } else {
+        const src = cardsSource === 'sample' ? ' (built-in sample cards — Google Sheet not configured yet)' : ' from Google Sheet';
+        $('statusEl').innerHTML = '<span class="ok">Loaded ' + rows.length + ' cards' + src + '.</span>';
+        $('startBtn').disabled = false;
+      }
+    } catch (e) {
+      rows = [];
+      $('statusEl').innerHTML = '<span class="err">Failed to load cards: ' + e.message + '</span>';
+    }
+  }
+
+  // ---- mismatch timer ----
+  function clearMismatch() {
+    if (mmInterval) { clearInterval(mmInterval); mmInterval = null; }
+    mmStart = null; mmRemaining = null;
+    renderCountdown();
+  }
+
+  function startMismatch(ms) {
+    clearMismatch();
+    mmDuration = ms; mmStart = Date.now(); mmRemaining = ms;
+    mmInterval = setInterval(() => {
+      if (zoomed) { renderCountdown(); return; }   // paused while zoom is open
+      const elapsed = Date.now() - mmStart;
+      mmRemaining = Math.max(0, mmDuration - elapsed);
+      renderCountdown();
+      if (mmRemaining <= 0) {
+        clearMismatch();
+        selectedQ = null; selectedA = null;
+        renderTiles();
+      }
+    }, 100);
+    renderCountdown();
+  }
+
+  function resumeMismatchFrom(remaining) {
+    mmStart = Date.now(); mmDuration = remaining;
+  }
+
+  // ---- game flow ----
+  function startGame() {
+    teams = [
+      { name: $('t1name').value.trim() || 'Team 1', color: $('t1color').value, score: 0 },
+      { name: $('t2name').value.trim() || 'Team 2', color: $('t2color').value, score: 0 }
+    ];
+    activeTeam = parseInt($('firstSel').value, 10) || 0;
+    matched = new Map();
+    selectedQ = null; selectedA = null; zoomed = null;
+    clearMismatch();
+
+    const take = shuffle(rows).slice(0, PAIRS);
+    qTiles = shuffle(take.map((r, i) => ({ key: 'Q-' + i, id: String(r.id), side: 'Q', text: r.question })));
+    aTiles = shuffle(take.map((r, i) => ({ key: 'A-' + i, id: String(r.id), side: 'A', text: r.answer })));
+
+    buildBoard();
+    started = true;
+    $('setupPanel').classList.add('hidden');
+    $('winnerEl').classList.remove('show');
+    $('scoreboardEl').classList.remove('hidden');
+    $('boardsEl').classList.remove('hidden');
+    $('resetBtn').classList.remove('hidden');
+    renderScoreboard();
+    renderTiles();
+  }
+
+  function resetGame() {
+    started = false;
+    clearMismatch();
+    closeZoom();
+    matched = new Map(); selectedQ = null; selectedA = null;
+    $('setupPanel').classList.remove('hidden');
+    $('scoreboardEl').classList.add('hidden');
+    $('boardsEl').classList.add('hidden');
+    $('resetBtn').classList.add('hidden');
+    $('winnerEl').classList.remove('show');
+  }
+
+  function buildBoard() {
+    tileEls = new Map();
+    for (const [gridId, tiles] of [['qGrid', qTiles], ['aGrid', aTiles]]) {
+      const grid = $(gridId);
+      grid.innerHTML = '';
+      for (const tile of tiles) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'tile';
+        btn.setAttribute('aria-label', tile.side === 'Q' ? 'Question card' : 'Answer card');
+        const txt = document.createElement('div');
+        txt.className = 'txt';
+        txt.textContent = tile.text;
+        const front = document.createElement('div');
+        front.className = 'tile-face tile-front';
+        front.appendChild(txt);
+        const back = document.createElement('div');
+        back.className = 'tile-face tile-back';
+        back.textContent = tile.side === 'Q' ? '?' : '✦';
+        const inner = document.createElement('div');
+        inner.className = 'tile-inner';
+        inner.appendChild(back);
+        inner.appendChild(front);
+        btn.appendChild(inner);
+        btn.addEventListener('click', () => onTileClick(tile));
+        grid.appendChild(btn);
+        tileEls.set(tile.key, btn);
+      }
+    }
+  }
+
+  function isSelected(tile) {
+    return (tile.side === 'Q' && selectedQ && selectedQ.key === tile.key)
+        || (tile.side === 'A' && selectedA && selectedA.key === tile.key);
+  }
+
+  function onTileClick(tile) {
+    if (!started) return;
+
+    if (matched.has(tile.key)) { toggleZoom(tile); return; }
+
+    const mismatchActive = mmRemaining !== null && mmRemaining > 0;
+    if (mismatchActive) {
+      if (isSelected(tile)) toggleZoom(tile);
+      return;
+    }
+
+    if (isSelected(tile)) { toggleZoom(tile); return; }
+
+    if (tile.side === 'Q') {
+      if (selectedQ) return;
+      selectedQ = tile;
+    } else {
+      if (selectedA) return;
+      selectedA = tile;
+    }
+    renderTiles();
+    if (selectedQ && selectedA) checkMatch();
+  }
+
+  function checkMatch() {
+    if (selectedQ.id === selectedA.id) {
+      matched.set(selectedQ.key, activeTeam);
+      matched.set(selectedA.key, activeTeam);
+      teams[activeTeam].score++;
+      renderScoreboard();
+      setTimeout(() => {
+        selectedQ = null; selectedA = null;
+        closeZoom();
+        renderTiles();
+        if (matched.size === PAIRS * 2) showWinner();
+      }, 450);
+      // same team goes again
+    } else {
+      startMismatch(MISMATCH_MS);
+      activeTeam = activeTeam === 0 ? 1 : 0;
+      renderScoreboard();
+    }
+    renderTiles();
+  }
+
+  function showWinner() {
+    let text, sub;
+    if (teams[0].score > teams[1].score) {
+      text = '🏆 ' + teams[0].name + ' wins!';
+      sub = teams[0].score + ' – ' + teams[1].score;
+    } else if (teams[1].score > teams[0].score) {
+      text = '🏆 ' + teams[1].name + ' wins!';
+      sub = teams[1].score + ' – ' + teams[0].score;
+    } else {
+      text = '🤝 It’s a tie!';
+      sub = teams[0].score + ' – ' + teams[1].score;
+    }
+    $('winnerText').textContent = text;
+    $('winnerSub').textContent = sub;
+    $('winnerEl').classList.add('show');
+    $('winnerEl').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  // ---- zoom ----
+  function toggleZoom(tile) {
+    if (zoomed && zoomed.key === tile.key) closeZoom();
+    else openZoom(tile);
+  }
+
+  function openZoom(tile) {
+    zoomed = tile;
+    $('zoomKind').textContent = tile.side === 'Q' ? 'Question' : 'Answer';
+    $('zoomTxt').textContent = tile.text;
+    $('zoomHint').textContent = (mmRemaining !== null && mmRemaining > 0)
+      ? 'Mismatch timer is paused while this is open.'
+      : 'Tap the same flipped card again to open or close this view.';
+    $('overlayEl').classList.add('show');
+  }
+
+  function closeZoom() {
+    if (zoomed && mmRemaining !== null && mmRemaining > 0) resumeMismatchFrom(mmRemaining);
+    zoomed = null;
+    $('overlayEl').classList.remove('show');
+  }
+
+  // ---- rendering ----
+  function renderTiles() {
+    const all = [...qTiles, ...aTiles];
+    for (const tile of all) {
+      const el = tileEls.get(tile.key);
+      if (!el) continue;
+      const owner = matched.has(tile.key) ? matched.get(tile.key) : null;
+      const faceUp = owner !== null || isSelected(tile);
+      el.classList.toggle('faceup', faceUp);
+      el.classList.toggle('matched', owner !== null);
+      const front = el.querySelector('.tile-front');
+      const back = el.querySelector('.tile-back');
+      if (owner !== null) {
+        const c = teams[owner].color;
+        front.style.borderColor = c;
+        front.style.backgroundColor = tint(c);
+        back.style.borderColor = c;
+      } else {
+        front.style.borderColor = '';
+        front.style.backgroundColor = '';
+        back.style.borderColor = '';
+      }
+    }
+  }
+
+  function renderScoreboard() {
+    const t = teams[activeTeam];
+    $('turnDot').style.backgroundColor = t.color;
+    $('turnName').textContent = t.name;
+    $('turnName').style.color = lighten(t.color, 0.35);
+    for (const i of [0, 1]) {
+      const chip = $('chip' + i);
+      chip.querySelector('.t').textContent = teams[i].name;
+      chip.querySelector('.t').style.color = lighten(teams[i].color, 0.35);
+      chip.querySelector('.s').textContent = teams[i].score;
+      chip.style.borderColor = i === activeTeam ? teams[i].color : '';
+    }
+  }
+
+  function renderCountdown() {
+    const el = $('countdownEl');
+    if (mmRemaining !== null && mmRemaining > 0) {
+      el.textContent = 'Flipping back in ' + Math.ceil(mmRemaining / 1000) + 's' + (zoomed ? ' (paused)' : '');
+    } else {
+      el.textContent = '';
+    }
+  }
+
+  // ---- wire up ----
+  $('startBtn').addEventListener('click', startGame);
+  $('againBtn').addEventListener('click', () => { resetGame(); });
+  $('refreshBtn').addEventListener('click', fetchCards);
+  $('resetBtn').addEventListener('click', resetGame);
+  $('zoomClose').addEventListener('click', closeZoom);
+  $('overlayEl').addEventListener('click', (e) => { if (e.target === $('overlayEl')) closeZoom(); });
+
+  fetchCards();
+})();
+</script>
+</body>
+</html>
